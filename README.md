@@ -54,10 +54,10 @@ Flurb stays visible during play as the pilot. Flurb Bay appears between stages a
 
 ## Zone 1 Levels
 
-- 1-1 Driftstone Field: tutorial for launch, steer, break, collect.
-- 1-2 Broken Orbit: rebound gaps and angle reading.
-- 1-3 Dense Belt: tougher driftstone and resource pressure.
-- 1-4 Approach Vector: prepares for the future boss route.
+- 1-1 Driftstone Field: gentle central mass for launch, steer, break, collect.
+- 1-2 Broken Orbit: ring-like gaps for rebound and angle reading.
+- 1-3 Dense Belt: thick asteroid belt with tougher driftstone/resource pressure.
+- 1-4 Approach Vector: chevron route that points toward the future boss signal.
 - 1-5 Driftmass Signal: boss placeholder, not implemented yet.
 
 Levels 1-4 in each zone are intended to use map layouts as part of the aesthetic language. In Space Navigation, maps should feel like asteroid routes, broken orbits, dense belts, and approach vectors rather than generic brick walls.

@@ -537,7 +537,7 @@
       audio.master = audio.master || audio.ctx.createGain();
       audio.music = audio.music || audio.ctx.createGain();
       audio.master.gain.value = 1.92;
-      audio.music.gain.value = 0.1;
+      audio.music.gain.value = 0.8;
       if (!audio.connected) {
         audio.master.connect(audio.ctx.destination);
         audio.music.connect(audio.ctx.destination);
@@ -692,7 +692,7 @@
       audio.musicOn = !audio.musicOn;
       audio.nextMusicAt = 0;
       audio.musicStep = 0;
-      if (audio.music) audio.music.gain.value = audio.musicOn ? 0.1 : 0;
+      if (audio.music) audio.music.gain.value = audio.musicOn ? 0.8 : 0;
       playSound(audio.musicOn ? "start" : "pause");
       setMessage(audio.musicOn ? "Music on. Space hum restored." : "Music off. SFX only.");
       updateUi();

@@ -164,20 +164,6 @@
       line-height: 1.45;
     }
 
-    .flurb-bay {
-      display: grid;
-      gap: 10px;
-    }
-
-    .flurb-canvas {
-      width: 100%;
-      aspect-ratio: 4 / 3;
-      display: block;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #070b16;
-    }
-
     .resource-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -238,16 +224,6 @@
     </main>
 
     <aside>
-      <section class="flurb-bay">
-        <h2>Flurb Bay</h2>
-        <canvas class="flurb-canvas" id="flurbBay" width="248" height="186" aria-label="Flurb showcase and starter ship"></canvas>
-        <div class="resource-grid">
-          <div class="resource-pill"><span class="resource-dot" style="background:#63e6ff"></span><span>Water</span><strong class="resource-count" id="waterCount">0</strong></div>
-          <div class="resource-pill"><span class="resource-dot" style="background:#c2cad4"></span><span>Iron</span><strong class="resource-count" id="ironCount">0</strong></div>
-          <div class="resource-pill"><span class="resource-dot" style="background:#e8dcff"></span><span>Platinum</span><strong class="resource-count" id="platinumCount">0</strong></div>
-        </div>
-      </section>
-
       <section>
         <h2>Status</h2>
         <div class="stat-grid">
@@ -271,6 +247,15 @@
       </section>
 
       <section>
+        <h2>Resources</h2>
+        <div class="resource-grid">
+          <div class="resource-pill"><span class="resource-dot" style="background:#63e6ff"></span><span>Water</span><strong class="resource-count" id="waterCount">0</strong></div>
+          <div class="resource-pill"><span class="resource-dot" style="background:#c2cad4"></span><span>Iron</span><strong class="resource-count" id="ironCount">0</strong></div>
+          <div class="resource-pill"><span class="resource-dot" style="background:#e8dcff"></span><span>Platinum</span><strong class="resource-count" id="platinumCount">0</strong></div>
+        </div>
+      </section>
+
+      <section>
         <h2>Console</h2>
         <div class="message" id="message">Press Space to launch. A/D to move.</div>
       </section>
@@ -280,8 +265,6 @@
   <script>
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
-    const flurbBay = document.getElementById("flurbBay");
-    const fctx = flurbBay.getContext("2d");
     const scoreLabel = document.getElementById("scoreLabel");
     const stageLabel = document.getElementById("stageLabel");
     const livesLabel = document.getElementById("livesLabel");
@@ -496,6 +479,10 @@
         updateUi();
         return;
       }
+      if (state.mode === "bay") {
+        beginStage(state.stageIndex + 1);
+        return;
+      }
       if (state.gameOver || state.won) return;
       if (state.paused) {
         state.paused = false;
@@ -526,18 +513,29 @@
       updateUi();
     }
 
+    function beginStage(stageIndex) {
+      state.stageIndex = stageIndex;
+      makeStage(stageIndex);
+      state.mode = "ready";
+      setMessage(`${currentStage().role} ${state.stageIndex + 1}: ${currentStage().name}.`);
+    }
+
     function nextStage() {
-      state.stageIndex += 1;
-      if (state.stageIndex >= stages.length) {
+      const nextIndex = state.stageIndex + 1;
+      if (nextIndex >= stages.length) {
         state.won = true;
         state.launched = false;
         setMessage("You cleared every stage. Flurb has a clear route through space.");
         updateUi();
         return;
       }
-      makeStage(state.stageIndex);
-      state.mode = "ready";
-      setMessage(`${currentStage().role} ${state.stageIndex + 1}: ${currentStage().name}.`);
+      state.mode = "bay";
+      state.launched = false;
+      state.asteroids = [];
+      state.powerups = [];
+      state.pulseTrail = [];
+      setMessage("Flurb Bay: review resources, then press Space to continue.");
+      updateUi();
     }
 
     function spawnParticles(x, y, color, count = 10) {
@@ -627,7 +625,7 @@
 
     function update(dt) {
       state.starTime += dt;
-      if (state.mode === "splash" || state.paused || state.gameOver || state.won) return;
+      if (state.mode === "splash" || state.mode === "bay" || state.paused || state.gameOver || state.won) return;
 
       const movingLeft = keys.has("arrowleft") || keys.has("a");
       const movingRight = keys.has("arrowright") || keys.has("d");
@@ -972,66 +970,83 @@
     }
 
     function drawFlurbBay(time) {
-      const w = flurbBay.width;
-      const h = flurbBay.height;
-      const bayGradient = fctx.createLinearGradient(0, 0, 0, h);
+      const w = canvas.width;
+      const h = canvas.height;
+      const bayGradient = ctx.createLinearGradient(0, 0, 0, h);
       bayGradient.addColorStop(0, "#070b16");
       bayGradient.addColorStop(0.7, "#101733");
       bayGradient.addColorStop(1, "#180f2b");
-      fctx.fillStyle = bayGradient;
-      fctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = bayGradient;
+      ctx.fillRect(0, 0, w, h);
 
-      fctx.fillStyle = "rgba(245,239,230,0.5)";
-      for (let i = 0; i < 28; i += 1) {
+      ctx.fillStyle = "rgba(245,239,230,0.5)";
+      for (let i = 0; i < 58; i += 1) {
         const x = (seededNoise(i + 211) * w + state.starTime * (i % 3 + 1) * 5) % w;
         const y = seededNoise(i + 317) * h;
-        fctx.fillRect(x, y, i % 4 === 0 ? 2 : 1, i % 5 === 0 ? 2 : 1);
+        ctx.fillRect(x, y, i % 4 === 0 ? 2 : 1, i % 5 === 0 ? 2 : 1);
       }
 
-      const dockX = 22;
-      const dockY = 126;
-      fctx.fillStyle = "rgba(99,230,255,0.12)";
-      fctx.fillRect(0, dockY + 27, w, 1);
-      fctx.fillStyle = "#2b3340";
-      fctx.fillRect(dockX, dockY + 21, 190, 12);
-      fctx.fillStyle = "#5f6b78";
-      fctx.fillRect(dockX + 16, dockY + 5, 158, 22);
-      fctx.fillStyle = "#d8dce4";
-      fctx.fillRect(dockX + 36, dockY, 118, 18);
-      fctx.fillStyle = "#63e6ff";
-      fctx.fillRect(dockX + 82, dockY + 5, 30, 5);
-      fctx.fillStyle = "#dfb85b";
-      fctx.fillRect(dockX + 28, dockY + 22, 18, 5);
-      fctx.fillRect(dockX + 146, dockY + 22, 18, 5);
+      ctx.fillStyle = "rgba(99,230,255,0.10)";
+      roundRect(72, 58, 656, 350, 8);
+      ctx.strokeStyle = "rgba(99,230,255,0.42)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(72, 58, 656, 350);
+
+      const dockX = 208;
+      const dockY = 284;
+      ctx.fillStyle = "rgba(99,230,255,0.12)";
+      ctx.fillRect(132, dockY + 54, 536, 2);
+      ctx.fillStyle = "#2b3340";
+      ctx.fillRect(dockX, dockY + 42, 384, 24);
+      ctx.fillStyle = "#5f6b78";
+      ctx.fillRect(dockX + 32, dockY + 10, 320, 44);
+      ctx.fillStyle = "#d8dce4";
+      ctx.fillRect(dockX + 72, dockY, 240, 36);
+      ctx.fillStyle = "#63e6ff";
+      ctx.fillRect(dockX + 164, dockY + 11, 62, 8);
+      ctx.fillStyle = "#dfb85b";
+      ctx.fillRect(dockX + 58, dockY + 45, 34, 10);
+      ctx.fillRect(dockX + 292, dockY + 45, 34, 10);
 
       const { pose, blend } = getFlurbPose(time);
       const bounce = Math.sin(time / 180) * 4;
-      const scale = 8;
-      const x = 86;
-      const y = 38 + bounce;
-      fctx.fillStyle = "rgba(0,0,0,0.3)";
-      fctx.beginPath();
-      fctx.ellipse(x + 36, y + 67, 44, 10, 0, 0, Math.PI * 2);
-      fctx.fill();
-      drawPixelPose(fctx, pose, x, y, scale, {
+      const scale = 13;
+      const x = 342;
+      const y = 130 + bounce;
+      ctx.fillStyle = "rgba(0,0,0,0.3)";
+      ctx.beginPath();
+      ctx.ellipse(x + 58, y + 110, 80, 15, 0, 0, Math.PI * 2);
+      ctx.fill();
+      drawPixelPose(ctx, pose, x, y, scale, {
         "1": "#151a22",
         "2": "#f6efe6",
         "3": blend < 0.5 ? "#d85cff" : "#63e6ff"
       });
 
-      fctx.fillStyle = "#f5efe6";
-      fctx.font = "bold 11px Segoe UI";
-      fctx.textAlign = "left";
-      fctx.fillText("FLURB", 14, 18);
-      fctx.fillStyle = "#b7afa3";
-      fctx.font = "10px Segoe UI";
-      fctx.fillText("starter ship: skimmer shell", 14, 32);
+      ctx.fillStyle = "#f5efe6";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "bold 42px Segoe UI";
+      ctx.fillText("FLURB BAY", canvas.width / 2, 105);
+      ctx.fillStyle = "#63e6ff";
+      ctx.font = "bold 17px Segoe UI";
+      ctx.fillText(`NEXT: ${stages[state.stageIndex + 1]?.name || "unknown route"}`, canvas.width / 2, 424);
+      ctx.fillStyle = "#b7afa3";
+      ctx.font = "15px Segoe UI";
+      ctx.fillText(`H2O ${state.resources.water}   FE ${state.resources.iron}   PT ${state.resources.platinum}`, canvas.width / 2, 452);
+      ctx.fillStyle = "#dfb85b";
+      ctx.font = "bold 16px Segoe UI";
+      ctx.fillText("PRESS SPACE TO CONTINUE", canvas.width / 2, 478);
     }
 
     function draw(time) {
       drawBackground();
       if (state.mode === "splash") {
         drawSplashScreen(time);
+        return;
+      }
+      if (state.mode === "bay") {
+        drawFlurbBay(time);
         return;
       }
 
@@ -1147,7 +1162,6 @@
       last = now;
       update(dt);
       draw(now);
-      drawFlurbBay(now);
       requestAnimationFrame(loop);
     }
 

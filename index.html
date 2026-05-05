@@ -329,6 +329,18 @@
       { speed: 34, size: 1.6, alpha: 0.62, stars: makeStars(38, 29) },
       { speed: 62, size: 2.3, alpha: 0.88, stars: makeStars(22, 47) }
     ];
+    const nebulaClouds = [
+      { x: 138, y: 92, r: 170, color: "rgba(216, 92, 255, 0.18)", speed: 9 },
+      { x: 628, y: 238, r: 210, color: "rgba(99, 230, 255, 0.14)", speed: 13 },
+      { x: 410, y: 455, r: 185, color: "rgba(223, 184, 91, 0.11)", speed: 7 }
+    ];
+    const routeBeacons = [
+      { x: 90, y: 94, drift: 0.3 },
+      { x: 214, y: 72, drift: 0.7 },
+      { x: 585, y: 118, drift: 1.1 },
+      { x: 704, y: 238, drift: 1.5 },
+      { x: 548, y: 404, drift: 1.9 }
+    ];
 
     const state = {
       stageIndex: 0,
@@ -829,6 +841,34 @@
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      for (const cloud of nebulaClouds) {
+        const y = (cloud.y + state.starTime * cloud.speed) % (canvas.height + cloud.r * 2) - cloud.r;
+        const nebula = ctx.createRadialGradient(cloud.x, y, 0, cloud.x, y, cloud.r);
+        nebula.addColorStop(0, cloud.color);
+        nebula.addColorStop(0.55, cloud.color.replace(/0\.\d+\)/, "0.06)"));
+        nebula.addColorStop(1, "rgba(5, 8, 22, 0)");
+        ctx.fillStyle = nebula;
+        ctx.beginPath();
+        ctx.arc(cloud.x, y, cloud.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.save();
+      ctx.globalAlpha = 0.32;
+      ctx.strokeStyle = "rgba(99, 230, 255, 0.24)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([7, 16]);
+      ctx.beginPath();
+      routeBeacons.forEach((beacon, index) => {
+        const x = beacon.x + Math.sin(state.starTime * 1.4 + beacon.drift) * 8;
+        const y = (beacon.y + state.starTime * 22) % (canvas.height + 80) - 40;
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
       for (const layer of starLayers) {
         ctx.fillStyle = `rgba(245, 239, 230, ${layer.alpha})`;
         for (const star of layer.stars) {
@@ -836,6 +876,38 @@
           ctx.fillRect(star.x, y, layer.size, layer.size);
         }
       }
+
+      ctx.save();
+      for (const beacon of routeBeacons) {
+        const pulse = 0.5 + Math.sin(state.starTime * 5 + beacon.drift) * 0.28;
+        const x = beacon.x + Math.sin(state.starTime * 1.4 + beacon.drift) * 8;
+        const y = (beacon.y + state.starTime * 22) % (canvas.height + 80) - 40;
+        ctx.strokeStyle = `rgba(99, 230, 255, ${0.18 + pulse * 0.24})`;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x - 5, y - 5, 10, 10);
+        ctx.fillStyle = `rgba(245, 239, 230, ${0.22 + pulse * 0.28})`;
+        ctx.fillRect(x - 1, y - 1, 2, 2);
+      }
+      ctx.restore();
+
+      const planetY = 82 + Math.sin(state.starTime * 0.8) * 8;
+      ctx.save();
+      ctx.globalAlpha = 0.36;
+      ctx.fillStyle = "#5f6b78";
+      ctx.beginPath();
+      ctx.arc(694, planetY, 29, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(223, 184, 91, 0.42)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(694, planetY + 2, 48, 12, -0.28, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 0.2;
+      ctx.fillStyle = "#63e6ff";
+      ctx.beginPath();
+      ctx.arc(122, 390 + Math.sin(state.starTime) * 5, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
 
       ctx.strokeStyle = "rgba(99, 230, 255, 0.08)";
       ctx.lineWidth = 1;
@@ -845,6 +917,17 @@
         ctx.lineTo(canvas.width, y + 18);
         ctx.stroke();
       }
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(245, 239, 230, 0.06)";
+      ctx.lineWidth = 1;
+      for (let x = -40 + (state.starTime * 18) % 96; x < canvas.width + 80; x += 96) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + 54, canvas.height);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
 
     function roundRect(x, y, w, h, r) {

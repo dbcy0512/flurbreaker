@@ -34,7 +34,7 @@ http://localhost:5175
 - Particles and simple arcade polish
 - Animated three-pose pixel blob character in a dedicated Flurb Bay
 - Mood-based Flurb palette and flux wisps in splash, bay, and pilot views
-- Outer-space background with parallax star motion
+- Outer-space background with parallax star motion, nebula drift, route beacons, and distant exploration landmarks
 - Skimmer replaces the plain paddle
 - Pulse Core replaces the plain ball, with trail and impact feedback
 - Typed particle effects for driftstone breaks and pulse impacts

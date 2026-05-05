@@ -220,6 +220,7 @@
         </div>
         <button id="startButton" type="button">Launch Pulse</button>
         <button id="soundButton" type="button">Test Sound</button>
+        <button id="musicButton" type="button">Music Off</button>
         <button id="restartButton" type="button">Restart Game</button>
       </section>
 
@@ -241,6 +242,7 @@
     const message = document.getElementById("message");
     const startButton = document.getElementById("startButton");
     const soundButton = document.getElementById("soundButton");
+    const musicButton = document.getElementById("musicButton");
     const restartButton = document.getElementById("restartButton");
 
     const colors = ["#dfb85b", "#83c27d", "#86acd9", "#d67f7a", "#b58ce0"];
@@ -254,9 +256,14 @@
     const audio = {
       ctx: null,
       master: null,
+      music: null,
       unlocked: false,
       muted: false,
-      connected: false
+      connected: false,
+      musicOn: true,
+      nextMusicAt: 0,
+      musicStep: 0,
+      musicMode: ""
     };
     const keys = new Set();
 
@@ -528,9 +535,12 @@
       }
       audio.ctx = audio.ctx || new AudioContext();
       audio.master = audio.master || audio.ctx.createGain();
+      audio.music = audio.music || audio.ctx.createGain();
       audio.master.gain.value = 1.92;
+      audio.music.gain.value = 0.1;
       if (!audio.connected) {
         audio.master.connect(audio.ctx.destination);
+        audio.music.connect(audio.ctx.destination);
         audio.connected = true;
       }
       audio.unlocked = true;
@@ -603,6 +613,89 @@
       filter.connect(gain);
       gain.connect(audio.master);
       source.start(now);
+    }
+
+    function playMusicTone(frequency, duration = 0.18, options = {}) {
+      if (!audio.unlocked || audio.muted || !audio.musicOn || !audio.ctx || !audio.music) return;
+      if (audio.ctx.state === "suspended") return;
+      const now = options.at ?? audio.ctx.currentTime;
+      const osc = audio.ctx.createOscillator();
+      const gain = audio.ctx.createGain();
+      const filter = audio.ctx.createBiquadFilter();
+      const volume = options.volume ?? 0.12;
+      osc.type = options.type ?? "triangle";
+      osc.frequency.setValueAtTime(frequency, now);
+      if (options.detune) osc.detune.setValueAtTime(options.detune, now);
+      filter.type = "lowpass";
+      filter.frequency.value = options.filter ?? 1800;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(volume, now + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(audio.music);
+      osc.start(now);
+      osc.stop(now + duration + 0.04);
+    }
+
+    function getMusicMode() {
+      if (state.won) return "clear";
+      if (state.boss && state.mode === "playing") return "boss";
+      if (state.mode === "splash") return "splash";
+      if (state.mode === "bay" || state.paused) return "bay";
+      if (state.launched) return "play";
+      return "ready";
+    }
+
+    function updateMusic() {
+      if (!audio.unlocked || audio.muted || !audio.musicOn || !audio.ctx || !audio.music) return;
+      const mode = getMusicMode();
+      if (mode !== audio.musicMode) {
+        audio.musicMode = mode;
+        audio.musicStep = 0;
+        audio.nextMusicAt = audio.ctx.currentTime;
+      }
+
+      const patterns = {
+        splash: { interval: 0.58, notes: [330, 494, 392, 587, 440, 660, 494, 392], volume: 0.11, duration: 0.34, filter: 1700 },
+        ready: { interval: 0.64, notes: [262, 392, 330, 494], volume: 0.08, duration: 0.26, filter: 1500 },
+        bay: { interval: 0.62, notes: [294, 440, 370, 554, 440, 370], volume: 0.1, duration: 0.32, filter: 1800 },
+        play: { interval: 0.28, notes: [330, 392, 494, 392, 587, 494, 392, 330], volume: 0.065, duration: 0.16, filter: 2100 },
+        boss: { interval: 0.36, notes: [110, 220, 147, 294, 196, 392, 147, 220], volume: 0.085, duration: 0.22, filter: 1200, type: "sawtooth" },
+        clear: { interval: 0.5, notes: [392, 494, 587, 784, 587, 494], volume: 0.09, duration: 0.3, filter: 2300 }
+      };
+      const pattern = patterns[mode] || patterns.ready;
+      const now = audio.ctx.currentTime;
+      while (audio.nextMusicAt < now + 0.12) {
+        const note = pattern.notes[audio.musicStep % pattern.notes.length];
+        playMusicTone(note, pattern.duration, {
+          at: audio.nextMusicAt,
+          volume: pattern.volume,
+          filter: pattern.filter,
+          type: pattern.type || "triangle"
+        });
+        if (audio.musicStep % 4 === 0) {
+          playMusicTone(note / 2, pattern.duration * 1.8, {
+            at: audio.nextMusicAt,
+            volume: pattern.volume * 0.46,
+            filter: pattern.filter * 0.65,
+            type: "sine"
+          });
+        }
+        audio.musicStep += 1;
+        audio.nextMusicAt += pattern.interval;
+      }
+    }
+
+    function toggleMusic() {
+      unlockAudio();
+      audio.musicOn = !audio.musicOn;
+      audio.nextMusicAt = 0;
+      audio.musicStep = 0;
+      if (audio.music) audio.music.gain.value = audio.musicOn ? 0.1 : 0;
+      playSound(audio.musicOn ? "start" : "pause");
+      setMessage(audio.musicOn ? "Music on. Space hum restored." : "Music off. SFX only.");
+      updateUi();
     }
 
     function playSound(name) {
@@ -1722,6 +1815,7 @@
       comboLabel.textContent = `x${state.combo}`;
       startButton.textContent = state.mode === "splash" ? "Begin Signal" : state.paused ? "Resume" : state.launched ? "Pulse In Flight" : "Launch Pulse";
       startButton.disabled = state.mode !== "splash" && state.launched && !state.paused;
+      musicButton.textContent = audio.musicOn ? "Music Off" : "Music On";
     }
 
     let last = performance.now();
@@ -1729,6 +1823,7 @@
       const dt = Math.min(0.033, (now - last) / 1000);
       last = now;
       update(dt);
+      updateMusic();
       draw(now);
       requestAnimationFrame(loop);
     }
@@ -1757,6 +1852,7 @@
       launch();
     });
     soundButton.addEventListener("click", testSound);
+    musicButton.addEventListener("click", toggleMusic);
     restartButton.addEventListener("click", () => {
       unlockAudio();
       restartGame();

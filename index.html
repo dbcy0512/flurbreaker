@@ -210,7 +210,7 @@
           <span>Pause: P</span>
           <span>Restart: R</span>
         </div>
-        <button id="startButton" type="button">Launch Ball</button>
+        <button id="startButton" type="button">Launch Pulse</button>
         <button id="restartButton" type="button">Restart Game</button>
       </section>
 
@@ -307,6 +307,7 @@
       ball: { x: 400, y: 434, r: 8, vx: 230, vy: -260 },
       bricks: [],
       particles: [],
+      pulseTrail: [],
       powerups: [],
       asteroids: [],
       resources: { water: 0, iron: 0, platinum: 0 },
@@ -370,7 +371,8 @@
       const speed = stage.ballSpeed;
       state.ball.vx = (Math.random() > 0.5 ? 1 : -1) * (150 + state.stageIndex * 28);
       state.ball.vy = -speed;
-      setMessage("Ball ready. Launch when you are.");
+      state.pulseTrail = [];
+      setMessage("Pulse Core ready. Launch when you are.");
     }
 
     function currentStage() {
@@ -381,6 +383,7 @@
       state.bricks = [];
       state.powerups = [];
       state.particles = [];
+      state.pulseTrail = [];
       state.asteroids = [];
       state.asteroidTimer = 0.65;
       const stage = stages[stageIndex];
@@ -461,7 +464,7 @@
       for (let i = 0; i < count; i += 1) {
         const angle = Math.random() * Math.PI * 2;
         const speed = 70 + Math.random() * 160;
-        state.particles.push({
+      state.particles.push({
           x,
           y,
           vx: Math.cos(angle) * speed,
@@ -482,6 +485,11 @@
         vy: 105,
         type: Math.random() > 0.5 ? "wide" : "life"
       });
+    }
+
+    function spawnImpactBurst(x, y, color, count = 14) {
+      spawnParticles(x, y, color, count);
+      state.pulseTrail.push({ x, y, life: 0.24, r: 18, impact: true, color });
     }
 
     function spawnAsteroid() {
@@ -522,8 +530,11 @@
       if (state.paused || state.gameOver || state.won) return;
       state.starTime += dt;
 
-      if (keys.has("arrowleft") || keys.has("a")) state.paddle.x -= state.paddle.speed * dt;
-      if (keys.has("arrowright") || keys.has("d")) state.paddle.x += state.paddle.speed * dt;
+      const movingLeft = keys.has("arrowleft") || keys.has("a");
+      const movingRight = keys.has("arrowright") || keys.has("d");
+      state.paddle.thrust = movingLeft ? -1 : movingRight ? 1 : 0;
+      if (movingLeft) state.paddle.x -= state.paddle.speed * dt;
+      if (movingRight) state.paddle.x += state.paddle.speed * dt;
       state.paddle.x = Math.max(16, Math.min(canvas.width - state.paddle.w - 16, state.paddle.x));
 
       if (!state.launched) {
@@ -553,6 +564,7 @@
           state.ball.vy = -Math.max(250, speed * (1 - Math.abs(hit) * 0.16));
           state.ball.y = state.paddle.y - state.ball.r - 1;
           state.combo = 1;
+          spawnImpactBurst(state.ball.x, state.ball.y, "#63e6ff", 10);
         }
 
         for (let i = state.bricks.length - 1; i >= 0; i -= 1) {
@@ -563,7 +575,7 @@
           state.ball.vy *= -1;
           state.score += 10 * state.combo;
           state.combo = Math.min(9, state.combo + 1);
-          spawnParticles(state.ball.x, state.ball.y, brick.color, 8);
+          spawnImpactBurst(state.ball.x, state.ball.y, brick.color, 8);
 
           if (brick.hp <= 0) {
             state.bricks.splice(i, 1);
@@ -626,6 +638,22 @@
         p.vy += 180 * dt;
         p.life -= dt;
         if (p.life <= 0) state.particles.splice(i, 1);
+      }
+
+      if (state.launched) {
+        state.pulseTrail.push({
+          x: state.ball.x,
+          y: state.ball.y,
+          life: 0.28,
+          r: state.ball.r,
+          impact: false,
+          color: "#63e6ff"
+        });
+      }
+      for (let i = state.pulseTrail.length - 1; i >= 0; i -= 1) {
+        const trail = state.pulseTrail[i];
+        trail.life -= dt;
+        if (trail.life <= 0) state.pulseTrail.splice(i, 1);
       }
 
       if (state.bricks.length === 0 && !state.gameOver) nextStage();
@@ -719,6 +747,81 @@
       ctx.restore();
     }
 
+    function drawPulseTrail() {
+      for (const trail of state.pulseTrail) {
+        const alpha = Math.max(0, trail.life / (trail.impact ? 0.24 : 0.28));
+        ctx.globalAlpha = alpha * (trail.impact ? 0.55 : 0.32);
+        ctx.strokeStyle = trail.color;
+        ctx.lineWidth = trail.impact ? 3 : 2;
+        ctx.beginPath();
+        ctx.arc(trail.x, trail.y, trail.impact ? trail.r * (1.4 - alpha) : trail.r * (1.2 + (1 - alpha)), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function drawPulseCore(time) {
+      const pulse = 1 + Math.sin(time / 110) * 0.13;
+      const glow = ctx.createRadialGradient(state.ball.x, state.ball.y, 2, state.ball.x, state.ball.y, 30);
+      glow.addColorStop(0, "rgba(245, 239, 230, 0.96)");
+      glow.addColorStop(0.35, "rgba(99, 230, 255, 0.86)");
+      glow.addColorStop(1, "rgba(99, 230, 255, 0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(state.ball.x, state.ball.y, 30 * pulse, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#f5dc7a";
+      ctx.beginPath();
+      ctx.arc(state.ball.x, state.ball.y, state.ball.r * pulse, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(state.ball.x - 3, state.ball.y - 3, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawResourceSkimmer(time) {
+      const x = state.paddle.x;
+      const y = state.paddle.y - 10;
+      const w = state.paddle.w;
+      const h = 26;
+      const thrust = state.paddle.thrust || 0;
+      const flicker = 5 + Math.sin(time / 48) * 3;
+
+      ctx.fillStyle = "rgba(0,0,0,0.28)";
+      ctx.beginPath();
+      ctx.ellipse(x + w / 2, y + h + 7, w * 0.48, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#d8dce4";
+      roundRect(x + 10, y + 8, w - 20, 14, 4);
+      ctx.fillStyle = "#5f6b78";
+      roundRect(x + 28, y + 2, w - 56, 18, 4);
+      ctx.fillStyle = "#63e6ff";
+      ctx.fillRect(x + w / 2 - 12, y + 7, 24, 5);
+      ctx.fillStyle = "#dfb85b";
+      ctx.fillRect(x + 14, y + 14, 12, 5);
+      ctx.fillRect(x + w - 26, y + 14, 12, 5);
+
+      ctx.fillStyle = "#2b3340";
+      ctx.fillRect(x + 4, y + 15, 18, 9);
+      ctx.fillRect(x + w - 22, y + 15, 18, 9);
+
+      if (thrust !== 0) {
+        const flameX = thrust < 0 ? x + w - 8 : x + 8;
+        ctx.fillStyle = "#63e6ff";
+        ctx.beginPath();
+        ctx.moveTo(flameX, y + 19);
+        ctx.lineTo(flameX + (thrust < 0 ? 1 : -1) * (18 + flicker), y + 14);
+        ctx.lineTo(flameX + (thrust < 0 ? 1 : -1) * (18 + flicker), y + 25);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#d85cff";
+        ctx.fillRect(flameX + (thrust < 0 ? 1 : -1) * 9, y + 18, 8, 4);
+      }
+    }
+
     function drawFlurbHud() {
       const x = state.blob.x - 16;
       const y = state.blob.y + 48;
@@ -774,19 +877,9 @@
         ctx.globalAlpha = 1;
       }
 
-      ctx.fillStyle = "#f5efe6";
-      roundRect(state.paddle.x, state.paddle.y, state.paddle.w, state.paddle.h, 7);
-      ctx.fillStyle = "#dfb85b";
-      ctx.fillRect(state.paddle.x + 10, state.paddle.y + 3, state.paddle.w - 20, 3);
-
-      ctx.fillStyle = "#f5dc7a";
-      ctx.beginPath();
-      ctx.arc(state.ball.x, state.ball.y, state.ball.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "rgba(255,255,255,0.75)";
-      ctx.beginPath();
-      ctx.arc(state.ball.x - 3, state.ball.y - 3, 3, 0, Math.PI * 2);
-      ctx.fill();
+      drawPulseTrail();
+      drawResourceSkimmer(time);
+      drawPulseCore(time);
 
       if (!state.launched && !state.gameOver && !state.won) drawOverlay("Ready", "Press Space to launch");
       if (state.paused) drawOverlay("Paused", "Press P to resume");
@@ -816,7 +909,7 @@
       livesLabel.textContent = state.lives;
       bricksLabel.textContent = state.bricks.length;
       comboLabel.textContent = `x${state.combo}`;
-      startButton.textContent = state.paused ? "Resume" : state.launched ? "Ball In Play" : "Launch Ball";
+      startButton.textContent = state.paused ? "Resume" : state.launched ? "Pulse In Flight" : "Launch Pulse";
       startButton.disabled = state.launched && !state.paused;
     }
 

@@ -33,6 +33,8 @@ http://localhost:5175
 - Flurb resource HUD for water, iron, and platinum
 - Falling asteroids that pass through bricks and can be collected by the player
 - Outer-space background with parallax star motion
+- Resource Skimmer replaces the plain paddle
+- Pulse Core replaces the plain ball, with trail and impact feedback
 
 ## Story Foundation
 

@@ -26,6 +26,7 @@ http://localhost:5175
 ## Features
 
 - 3 data-defined stages to start
+- Stage 1 is the tutorial: Driftstone Field
 - Score, lives, combo counter
 - Wide-paddle and extra-life powerups
 - Particles and simple arcade polish
@@ -46,3 +47,8 @@ Flurb is traveling through space. Water, iron, and platinum are critical to surv
 Flurb is a member of a species known as Fluxmorphs. The start screen only hints at identification for now, leaving room for the character and lore to evolve later.
 
 Flurb stays visible during play as the pilot. The side-panel bay is reserved for resources, ship presentation, and later post-stage upgrade/evolution choices.
+
+## Stage Materials
+
+- Stage 1: Driftstone, a space-worn tutorial material with mineral seams and chipped stone surfaces.
+- Later stages: placeholder neon materials until their identities are designed.

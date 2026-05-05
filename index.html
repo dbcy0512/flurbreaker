@@ -298,7 +298,9 @@
     const keys = new Set();
     const stages = [
       {
-        name: "Warm Boot",
+        name: "Driftstone Field",
+        role: "Tutorial",
+        material: "driftstone",
         ballSpeed: 270,
         paddleWidth: 120,
         asteroidEvery: 1.55,
@@ -312,6 +314,8 @@
       },
       {
         name: "Pixel Gate",
+        role: "Stage",
+        material: "neon",
         ballSpeed: 302,
         paddleWidth: 112,
         asteroidEvery: 1.3,
@@ -326,6 +330,8 @@
       },
       {
         name: "Neon Stack",
+        role: "Stage",
+        material: "neon",
         ballSpeed: 334,
         paddleWidth: 104,
         asteroidEvery: 1.08,
@@ -468,7 +474,10 @@
             h: brickH,
             hp,
             maxHp: hp,
-            color: colors[(hp + row + col) % colors.length]
+            color: colors[(hp + row + col) % colors.length],
+            material: stage.material,
+            row,
+            col
           });
         }
       }
@@ -528,7 +537,7 @@
       }
       makeStage(state.stageIndex);
       state.mode = "ready";
-      setMessage(`Stage ${state.stageIndex + 1}: ${currentStage().name}.`);
+      setMessage(`${currentStage().role} ${state.stageIndex + 1}: ${currentStage().name}.`);
     }
 
     function spawnParticles(x, y, color, count = 10) {
@@ -776,6 +785,51 @@
       ctx.fill();
     }
 
+    function drawBrick(brick) {
+      if (brick.material === "driftstone") {
+        const damage = 1 - brick.hp / brick.maxHp;
+        const base = brick.hp > 1 ? "#8e8d86" : "#6f767c";
+        const edge = brick.hp > 1 ? "#b0a793" : "#8fa0a7";
+        const seam = brick.hp > 1 ? "#63e6ff" : "#4fb5ca";
+        ctx.fillStyle = base;
+        roundRect(brick.x, brick.y, brick.w, brick.h, 6);
+        ctx.fillStyle = "rgba(255,255,255,0.15)";
+        ctx.fillRect(brick.x + 5, brick.y + 4, brick.w - 12, 3);
+        ctx.fillStyle = edge;
+        ctx.fillRect(brick.x + 5, brick.y + brick.h - 5, brick.w - 10, 3);
+
+        const offset = (brick.row * 9 + brick.col * 13) % 17;
+        ctx.strokeStyle = seam;
+        ctx.globalAlpha = 0.55;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(brick.x + 8 + offset, brick.y + 7);
+        ctx.lineTo(brick.x + 22 + offset * 0.35, brick.y + brick.h - 8);
+        ctx.lineTo(brick.x + brick.w - 11, brick.y + 11 + (offset % 6));
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        ctx.fillStyle = "rgba(5,8,22,0.22)";
+        ctx.fillRect(brick.x + 10 + (offset % 9), brick.y + 10, 5, 4);
+        ctx.fillRect(brick.x + brick.w - 19, brick.y + 8 + (offset % 8), 6, 5);
+
+        if (damage > 0) {
+          ctx.strokeStyle = "rgba(5,8,22,0.55)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(brick.x + brick.w * 0.22, brick.y + 5);
+          ctx.lineTo(brick.x + brick.w * 0.34, brick.y + brick.h - 6);
+          ctx.stroke();
+        }
+        return;
+      }
+
+      ctx.fillStyle = brick.hp > 1 ? "#f3d088" : brick.color;
+      roundRect(brick.x, brick.y, brick.w, brick.h, 5);
+      ctx.fillStyle = "rgba(255,255,255,0.16)";
+      ctx.fillRect(brick.x + 6, brick.y + 5, brick.w - 12, 3);
+    }
+
     function drawAsteroid(asteroid) {
       const material = resources[asteroid.type];
       ctx.save();
@@ -982,10 +1036,7 @@
       }
 
       for (const brick of state.bricks) {
-        ctx.fillStyle = brick.hp > 1 ? "#f3d088" : brick.color;
-        roundRect(brick.x, brick.y, brick.w, brick.h, 5);
-        ctx.fillStyle = "rgba(255,255,255,0.16)";
-        ctx.fillRect(brick.x + 6, brick.y + 5, brick.w - 12, 3);
+        drawBrick(brick);
       }
 
       for (const powerup of state.powerups) {

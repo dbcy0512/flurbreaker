@@ -807,6 +807,49 @@
       ctx.fill();
     }
 
+    function drawPixelPose(ctxTarget, pose, x, y, scale, palette) {
+      for (let row = 0; row < pose.length; row += 1) {
+        for (let col = 0; col < pose[row].length; col += 1) {
+          const value = pose[row][col];
+          if (value === "0") continue;
+          ctxTarget.fillStyle = palette[value];
+          ctxTarget.fillRect(x + col * scale, y + row * scale, scale, scale);
+        }
+      }
+    }
+
+    function getFlurbPose(time) {
+      const frame = Math.floor(time / 260) % blobPoses.length;
+      const nextFrame = (frame + 1) % blobPoses.length;
+      const blend = (time % 260) / 260;
+      return {
+        pose: blend < 0.5 ? blobPoses[frame] : blobPoses[nextFrame],
+        blend
+      };
+    }
+
+    function drawPilotFlurb(time, shipX, shipY, shipW) {
+      const { pose, blend } = getFlurbPose(time);
+      const scale = 4;
+      const bob = Math.sin(time / 180) * 2;
+      const x = shipX + shipW / 2 - 18;
+      const y = shipY - 30 + bob;
+
+      ctx.fillStyle = "rgba(99, 230, 255, 0.22)";
+      ctx.beginPath();
+      ctx.ellipse(x + 18, y + 27, 25, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      drawPixelPose(ctx, pose, x, y, scale, {
+        "1": "#151a22",
+        "2": "#f6efe6",
+        "3": blend < 0.5 ? "#d85cff" : "#63e6ff"
+      });
+
+      ctx.fillStyle = "rgba(255,255,255,0.38)";
+      ctx.fillRect(x + 5 * scale, y + 1 * scale, scale, scale);
+    }
+
     function drawResourceSkimmer(time) {
       const x = state.paddle.x;
       const y = state.paddle.y - 10;
@@ -846,17 +889,8 @@
         ctx.fillStyle = "#d85cff";
         ctx.fillRect(flameX + (thrust < 0 ? 1 : -1) * 9, y + 18, 8, 4);
       }
-    }
 
-    function drawBayPixel(ctxTarget, pose, x, y, scale, palette) {
-      for (let row = 0; row < pose.length; row += 1) {
-        for (let col = 0; col < pose[row].length; col += 1) {
-          const value = pose[row][col];
-          if (value === "0") continue;
-          ctxTarget.fillStyle = palette[value];
-          ctxTarget.fillRect(x + col * scale, y + row * scale, scale, scale);
-        }
-      }
+      drawPilotFlurb(time, x, y, w);
     }
 
     function drawFlurbBay(time) {
@@ -892,10 +926,7 @@
       fctx.fillRect(dockX + 28, dockY + 22, 18, 5);
       fctx.fillRect(dockX + 146, dockY + 22, 18, 5);
 
-      const frame = Math.floor(time / 260) % blobPoses.length;
-      const nextFrame = (frame + 1) % blobPoses.length;
-      const blend = (time % 260) / 260;
-      const pose = blend < 0.5 ? blobPoses[frame] : blobPoses[nextFrame];
+      const { pose, blend } = getFlurbPose(time);
       const bounce = Math.sin(time / 180) * 4;
       const scale = 8;
       const x = 86;
@@ -904,7 +935,7 @@
       fctx.beginPath();
       fctx.ellipse(x + 36, y + 67, 44, 10, 0, 0, Math.PI * 2);
       fctx.fill();
-      drawBayPixel(fctx, pose, x, y, scale, {
+      drawPixelPose(fctx, pose, x, y, scale, {
         "1": "#151a22",
         "2": "#f6efe6",
         "3": blend < 0.5 ? "#d85cff" : "#63e6ff"

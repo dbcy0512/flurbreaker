@@ -597,6 +597,25 @@
       setMessage(`Flurb collected ${resources[asteroid.type].label.toLowerCase()}.`);
     }
 
+    function handlePulseMiss() {
+      state.lives -= 1;
+      state.asteroids = [];
+      state.asteroidTimer = 0.65;
+      state.launched = false;
+
+      if (state.lives <= 0) {
+        state.mode = "gameover";
+        state.gameOver = true;
+        state.powerups = [];
+        setMessage("Game over. Press R or Restart Game.");
+        return;
+      }
+
+      state.mode = "ready";
+      resetBall();
+      setMessage("Pulse missed. Resources pause until the next launch.");
+    }
+
     function update(dt) {
       state.starTime += dt;
       if (state.mode === "splash" || state.paused || state.gameOver || state.won) return;
@@ -656,15 +675,7 @@
           break;
         }
 
-        if (state.ball.y > canvas.height + 30) {
-          state.lives -= 1;
-          if (state.lives <= 0) {
-            state.gameOver = true;
-            setMessage("Game over. Press R or Restart Game.");
-          } else {
-            resetBall();
-          }
-        }
+        if (state.ball.y > canvas.height + 30) handlePulseMiss();
       }
 
       for (let i = state.powerups.length - 1; i >= 0; i -= 1) {
@@ -684,23 +695,23 @@
         }
       }
 
-      if (state.mode === "playing") {
+      if (state.mode === "playing" && state.launched) {
         state.asteroidTimer -= dt;
         if (state.asteroidTimer <= 0) {
           spawnAsteroid();
           state.asteroidTimer = currentStage().asteroidEvery * (0.82 + Math.random() * 0.36);
         }
-      }
 
-      for (let i = state.asteroids.length - 1; i >= 0; i -= 1) {
-        const asteroid = state.asteroids[i];
-        asteroid.y += asteroid.vy * dt;
-        asteroid.spin += asteroid.spinSpeed * dt;
-        if (circleRectCollision(asteroid, state.paddle)) {
-          collectAsteroid(asteroid);
-          state.asteroids.splice(i, 1);
-        } else if (asteroid.y - asteroid.r > canvas.height + 20) {
-          state.asteroids.splice(i, 1);
+        for (let i = state.asteroids.length - 1; i >= 0; i -= 1) {
+          const asteroid = state.asteroids[i];
+          asteroid.y += asteroid.vy * dt;
+          asteroid.spin += asteroid.spinSpeed * dt;
+          if (circleRectCollision(asteroid, state.paddle)) {
+            collectAsteroid(asteroid);
+            state.asteroids.splice(i, 1);
+          } else if (asteroid.y - asteroid.r > canvas.height + 20) {
+            state.asteroids.splice(i, 1);
+          }
         }
       }
 

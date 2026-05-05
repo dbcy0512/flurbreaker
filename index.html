@@ -578,19 +578,42 @@
       updateUi();
     }
 
-    function spawnParticles(x, y, color, count = 10) {
+    function spawnParticles(x, y, color, count = 10, options = {}) {
       for (let i = 0; i < count; i += 1) {
         const angle = Math.random() * Math.PI * 2;
-        const speed = 70 + Math.random() * 160;
-      state.particles.push({
+        const speed = (options.minSpeed ?? 70) + Math.random() * (options.maxSpeed ?? 160);
+        state.particles.push({
           x,
           y,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
-          life: 0.45 + Math.random() * 0.35,
-          color
+          life: (options.life ?? 0.45) + Math.random() * (options.lifeJitter ?? 0.35),
+          maxLife: options.life ?? 0.45,
+          color,
+          size: (options.size ?? 4) + Math.random() * (options.sizeJitter ?? 0),
+          gravity: options.gravity ?? 180,
+          shape: options.shape ?? "square",
+          spin: Math.random() * Math.PI * 2,
+          spinSpeed: (Math.random() - 0.5) * (options.spin ?? 5)
         });
       }
+    }
+
+    function spawnBrickBreakEffect(brick) {
+      if (brick.material === "driftstone") {
+        const cx = brick.x + brick.w / 2;
+        const cy = brick.y + brick.h / 2;
+        spawnParticles(cx, cy, "#8fa0a7", 18, { shape: "chip", minSpeed: 90, maxSpeed: 230, life: 0.48, lifeJitter: 0.32, size: 4, sizeJitter: 4, gravity: 240, spin: 9 });
+        spawnParticles(cx, cy, "#63e6ff", 7, { shape: "spark", minSpeed: 80, maxSpeed: 190, life: 0.38, lifeJitter: 0.22, size: 2, sizeJitter: 2, gravity: 60 });
+        return;
+      }
+
+      spawnParticles(brick.x + brick.w / 2, brick.y + brick.h / 2, brick.color, 18, { shape: "spark", minSpeed: 120, maxSpeed: 260, life: 0.36, lifeJitter: 0.24, size: 3, sizeJitter: 2, gravity: 80 });
+    }
+
+    function spawnResourcePickupEffect(x, y, resource) {
+      spawnParticles(x, y, resource.color, 18, { shape: "mote", minSpeed: 35, maxSpeed: 150, life: 0.62, lifeJitter: 0.35, size: 2, sizeJitter: 2, gravity: -35 });
+      state.pulseTrail.push({ x, y, life: 0.34, r: 22, impact: true, color: resource.color });
     }
 
     function maybePowerup(x, y) {
@@ -606,7 +629,7 @@
     }
 
     function spawnImpactBurst(x, y, color, count = 14) {
-      spawnParticles(x, y, color, count);
+      spawnParticles(x, y, color, count, { shape: "spark", minSpeed: 95, maxSpeed: 210, life: 0.32, lifeJitter: 0.18, size: 2, sizeJitter: 2, gravity: 80 });
       state.pulseTrail.push({ x, y, life: 0.24, r: 18, impact: true, color });
     }
 
@@ -640,7 +663,7 @@
     function collectAsteroid(asteroid) {
       state.resources[asteroid.type] += 1;
       state.score += 15;
-      spawnParticles(asteroid.x, asteroid.y, resources[asteroid.type].color, 14);
+      spawnResourcePickupEffect(asteroid.x, asteroid.y, resources[asteroid.type]);
       setMessage(`Flurb collected ${resources[asteroid.type].label.toLowerCase()}.`);
     }
 
@@ -715,6 +738,7 @@
           spawnImpactBurst(state.ball.x, state.ball.y, brick.color, 8);
 
           if (brick.hp <= 0) {
+            spawnBrickBreakEffect(brick);
             state.bricks.splice(i, 1);
             state.score += 20;
             maybePowerup(brick.x + brick.w / 2, brick.y + brick.h / 2);
@@ -766,7 +790,8 @@
         const p = state.particles[i];
         p.x += p.vx * dt;
         p.y += p.vy * dt;
-        p.vy += 180 * dt;
+        p.vy += p.gravity * dt;
+        p.spin += p.spinSpeed * dt;
         p.life -= dt;
         if (p.life <= 0) state.particles.splice(i, 1);
       }
@@ -887,6 +912,37 @@
       ctx.fillStyle = "rgba(255,255,255,0.25)";
       ctx.fillRect(-asteroid.r * 0.4, -asteroid.r * 0.45, 5, 5);
       ctx.restore();
+    }
+
+    function drawParticle(p) {
+      const alpha = Math.max(0, p.life / (p.maxLife || 1));
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = p.color;
+      ctx.strokeStyle = p.color;
+
+      if (p.shape === "chip") {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.spin);
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size * 1.4, p.size);
+        ctx.restore();
+      } else if (p.shape === "mote") {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * (0.8 + (1 - alpha) * 0.6), 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.shape === "spark") {
+        const length = p.size * 4;
+        const mag = Math.max(1, Math.hypot(p.vx, p.vy));
+        ctx.lineWidth = Math.max(1, p.size * 0.65);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x - (p.vx / mag) * length, p.y - (p.vy / mag) * length);
+        ctx.stroke();
+      } else {
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+      }
+
+      ctx.globalAlpha = 1;
     }
 
     function drawPulseTrail() {
@@ -1113,10 +1169,7 @@
       }
 
       for (const p of state.particles) {
-        ctx.globalAlpha = Math.max(0, p.life);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, 4, 4);
-        ctx.globalAlpha = 1;
+        drawParticle(p);
       }
 
       drawPulseTrail();

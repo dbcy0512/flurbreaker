@@ -38,6 +38,7 @@ http://localhost:5175
 - Outer-space background with parallax star motion
 - Resource Skimmer replaces the plain paddle
 - Pulse Core replaces the plain ball, with trail and impact feedback
+- Typed particle effects for driftstone breaks, resource pickups, and pulse impacts
 - Flurb is visible as the skimmer pilot during gameplay
 - Flurb Bay appears as a before/between-stage interstitial for resources and future ship evolution
 - Pause screen also uses Flurb Bay so resources and ship state remain visible
@@ -59,6 +60,8 @@ Flurb stays visible during play as the pilot. Flurb Bay appears between stages a
 - 1-4 Approach Vector: prepares for the future boss route.
 - 1-5 Driftmass Signal: boss placeholder, not implemented yet.
 
+Levels 1-4 in each zone are intended to use map layouts as part of the aesthetic language. In Space Navigation, maps should feel like asteroid routes, broken orbits, dense belts, and approach vectors rather than generic brick walls.
+
 ## Resource Evolution Roles
 
 - Water: Flurb stability and recovery capacity.
@@ -68,3 +71,9 @@ Flurb stays visible during play as the pilot. Flurb Bay appears between stages a
 ## Materials
 
 - Zone 1 breaker levels use Driftstone, a space-worn material with mineral seams and chipped stone surfaces.
+
+## Effects Foundation
+
+- Brick breaks can emit material-specific debris, such as driftstone chips and mineral sparks.
+- Resource pickups emit colored motes matching the collected resource.
+- Pulse Core hits emit short impact rings and directional sparks.

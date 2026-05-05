@@ -249,6 +249,12 @@
       green: "#9cffb6",
       violet: "#b66cff"
     };
+    const audio = {
+      ctx: null,
+      master: null,
+      unlocked: false,
+      muted: false
+    };
     const keys = new Set();
 
     const zones = [
@@ -509,14 +515,126 @@
       message.textContent = text;
     }
 
+    function unlockAudio() {
+      if (audio.unlocked || audio.muted) return;
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) {
+        audio.muted = true;
+        return;
+      }
+      audio.ctx = audio.ctx || new AudioContext();
+      audio.master = audio.master || audio.ctx.createGain();
+      audio.master.gain.value = 0.22;
+      audio.master.connect(audio.ctx.destination);
+      if (audio.ctx.state === "suspended") audio.ctx.resume();
+      audio.unlocked = true;
+    }
+
+    function playTone(frequency, duration = 0.12, options = {}) {
+      if (!audio.unlocked || audio.muted || !audio.ctx) return;
+      const now = audio.ctx.currentTime;
+      const osc = audio.ctx.createOscillator();
+      const gain = audio.ctx.createGain();
+      const filter = audio.ctx.createBiquadFilter();
+      const volume = options.volume ?? 0.22;
+      const attack = options.attack ?? 0.008;
+      const release = options.release ?? 0.05;
+
+      osc.type = options.type ?? "sine";
+      osc.frequency.setValueAtTime(frequency, now);
+      if (options.endFrequency) osc.frequency.exponentialRampToValueAtTime(Math.max(20, options.endFrequency), now + duration);
+      if (options.detune) osc.detune.setValueAtTime(options.detune, now);
+      filter.type = options.filterType ?? "lowpass";
+      filter.frequency.value = options.filter ?? 2400;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(volume, now + attack);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration + release);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(audio.master);
+      osc.start(now);
+      osc.stop(now + duration + release + 0.02);
+    }
+
+    function playNoise(duration = 0.12, options = {}) {
+      if (!audio.unlocked || audio.muted || !audio.ctx) return;
+      const now = audio.ctx.currentTime;
+      const bufferSize = Math.max(1, Math.floor(audio.ctx.sampleRate * duration));
+      const buffer = audio.ctx.createBuffer(1, bufferSize, audio.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i += 1) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+      const source = audio.ctx.createBufferSource();
+      const gain = audio.ctx.createGain();
+      const filter = audio.ctx.createBiquadFilter();
+      source.buffer = buffer;
+      filter.type = options.filterType ?? "bandpass";
+      filter.frequency.value = options.filter ?? 900;
+      filter.Q.value = options.q ?? 1.2;
+      gain.gain.setValueAtTime(options.volume ?? 0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(audio.master);
+      source.start(now);
+    }
+
+    function playSound(name) {
+      if (!audio.unlocked || audio.muted) return;
+      if (name === "start") {
+        playTone(330, 0.09, { type: "triangle", volume: 0.16, filter: 1800 });
+        setTimeout(() => playTone(495, 0.16, { type: "triangle", volume: 0.13, filter: 2200 }), 70);
+      } else if (name === "launch") {
+        playTone(180, 0.16, { type: "sawtooth", endFrequency: 520, volume: 0.14, filter: 1800 });
+        playTone(720, 0.08, { type: "sine", volume: 0.08, filter: 2600 });
+      } else if (name === "paddle") {
+        playTone(260, 0.06, { type: "triangle", endFrequency: 360, volume: 0.08, filter: 1600 });
+      } else if (name === "brick-hit") {
+        playTone(420, 0.045, { type: "square", endFrequency: 300, volume: 0.055, filter: 1200 });
+      } else if (name === "brick-break") {
+        playNoise(0.11, { volume: 0.08, filter: 1300, q: 1.6 });
+        playTone(640, 0.08, { type: "triangle", volume: 0.07, filter: 2800 });
+      } else if (name === "powerup") {
+        playTone(620, 0.07, { type: "sine", volume: 0.1, filter: 2600 });
+        setTimeout(() => playTone(930, 0.11, { type: "sine", volume: 0.09, filter: 3000 }), 55);
+      } else if (name === "miss") {
+        playTone(180, 0.18, { type: "triangle", endFrequency: 96, volume: 0.11, filter: 900 });
+      } else if (name === "gameover") {
+        playTone(196, 0.18, { type: "triangle", volume: 0.12, filter: 1000 });
+        setTimeout(() => playTone(130, 0.22, { type: "triangle", volume: 0.1, filter: 800 }), 110);
+      } else if (name === "stage-clear") {
+        playTone(440, 0.08, { type: "triangle", volume: 0.09, filter: 2400 });
+        setTimeout(() => playTone(660, 0.1, { type: "triangle", volume: 0.09, filter: 2600 }), 70);
+        setTimeout(() => playTone(990, 0.16, { type: "sine", volume: 0.08, filter: 3200 }), 150);
+      } else if (name === "boss-hit") {
+        playTone(110, 0.09, { type: "sawtooth", endFrequency: 82, volume: 0.12, filter: 900 });
+        playNoise(0.08, { volume: 0.05, filter: 700, q: 2 });
+      } else if (name === "boss-break") {
+        playNoise(0.2, { volume: 0.11, filter: 620, q: 1.5 });
+        playTone(260, 0.16, { type: "sawtooth", endFrequency: 180, volume: 0.1, filter: 1000 });
+      } else if (name === "core-open") {
+        playTone(246, 0.18, { type: "triangle", endFrequency: 492, volume: 0.1, filter: 1800 });
+        setTimeout(() => playTone(738, 0.24, { type: "sine", volume: 0.09, filter: 3000 }), 120);
+      } else if (name === "zone-clear") {
+        playTone(392, 0.1, { type: "triangle", volume: 0.09, filter: 2400 });
+        setTimeout(() => playTone(587, 0.14, { type: "triangle", volume: 0.09, filter: 2800 }), 90);
+        setTimeout(() => playTone(880, 0.26, { type: "sine", volume: 0.1, filter: 3600 }), 210);
+      } else if (name === "pause") {
+        playTone(320, 0.06, { type: "sine", volume: 0.07, filter: 1800 });
+      }
+    }
+
     function launch() {
+      unlockAudio();
       if (state.mode === "splash") {
         state.mode = "ready";
         setMessage("Signal locked. Press Space again to launch the Pulse Core.");
+        playSound("start");
         updateUi();
         return;
       }
       if (state.mode === "bay") {
+        playSound("start");
         beginStage(state.stageIndex + 1);
         return;
       }
@@ -524,10 +642,12 @@
       if (state.paused) {
         state.paused = false;
         setMessage("Back in motion.");
+        playSound("pause");
       }
       if (!state.launched) {
         state.mode = "playing";
         state.launched = true;
+        playSound("launch");
         setMessage("Clear the board.");
       }
     }
@@ -559,6 +679,7 @@
       if (nextIndex >= levels.length) {
         state.won = true;
         state.launched = false;
+        playSound("zone-clear");
         setMessage(`${currentZone.name} route clear. Boss signal reserved for later.`);
         updateUi();
         return;
@@ -567,6 +688,7 @@
       state.launched = false;
       state.powerups = [];
       state.pulseTrail = [];
+      playSound("stage-clear");
       setMessage("Flurb Bay: route check complete. Press Space to continue.");
       updateUi();
     }
@@ -652,11 +774,13 @@
       state.ball.vy *= -1;
       state.score += piece.core ? 35 * state.combo : 20 * state.combo;
       state.combo = Math.min(9, state.combo + 1);
+      playSound("boss-hit");
       spawnImpactBurst(state.ball.x, state.ball.y, piece.core ? "#dfb85b" : "#63e6ff", 12);
 
       if (piece.hp > 0) return;
 
       piece.active = false;
+      playSound("boss-break");
       spawnBossPieceBreakEffect(piece);
       if (!piece.core) {
         state.droppedBossPieces.push({
@@ -673,6 +797,7 @@
           const core = state.boss.pieces.find((part) => part.core);
           core.active = true;
           state.boss.coreOpen = true;
+          playSound("core-open");
           setMessage("Driftmass core exposed. Crack the signal.");
         }
         return;
@@ -681,6 +806,7 @@
       state.won = true;
       state.launched = false;
       state.powerups = [];
+      playSound("zone-clear");
       setMessage("Driftmass cracked. Zone 1 route clear.");
       updateUi();
     }
@@ -718,12 +844,14 @@
         state.mode = "gameover";
         state.gameOver = true;
         state.powerups = [];
+        playSound("gameover");
         setMessage("Game over. Press R or Restart Game.");
         return;
       }
 
       state.mode = "ready";
       resetBall();
+      playSound("miss");
       setMessage("Pulse missed. Press Space to launch again.");
     }
 
@@ -767,6 +895,7 @@
           state.ball.vy = -Math.max(250, speed * (1 - Math.abs(hit) * 0.16));
           state.ball.y = state.paddle.y - state.ball.r - 1;
           state.combo = 1;
+          playSound("paddle");
           spawnImpactBurst(state.ball.x, state.ball.y, "#63e6ff", 10);
         }
 
@@ -778,6 +907,7 @@
           state.ball.vy *= -1;
           state.score += 10 * state.combo;
           state.combo = Math.min(9, state.combo + 1);
+          playSound(brick.hp <= 0 ? "brick-break" : "brick-hit");
           spawnImpactBurst(state.ball.x, state.ball.y, brick.color, 8);
 
           if (brick.hp <= 0) {
@@ -805,6 +935,7 @@
         const powerup = state.powerups[i];
         powerup.y += powerup.vy * dt;
         if (rectsOverlap(powerup, state.paddle)) {
+          playSound("powerup");
           if (powerup.type === "wide") {
             state.paddle.w = Math.min(170, state.paddle.w + 24);
             setMessage("Paddle widened. A small mercy.");
@@ -1569,10 +1700,12 @@
     window.addEventListener("keydown", (event) => {
       const key = event.key.toLowerCase();
       if (["arrowleft", "arrowright", "w", "a", "s", "d", " ", "p", "r"].includes(key)) event.preventDefault();
+      unlockAudio();
       if (key === " ") launch();
       else if (key === "p") {
         if (!state.gameOver && !state.won) {
           state.paused = !state.paused;
+          playSound("pause");
           setMessage(state.paused ? "Paused." : "Back in motion.");
         }
       } else if (key === "r") restartGame();
@@ -1583,8 +1716,14 @@
       keys.delete(event.key.toLowerCase());
     });
 
-    startButton.addEventListener("click", launch);
-    restartButton.addEventListener("click", restartGame);
+    startButton.addEventListener("click", () => {
+      unlockAudio();
+      launch();
+    });
+    restartButton.addEventListener("click", () => {
+      unlockAudio();
+      restartGame();
+    });
 
     restartGame();
     requestAnimationFrame(loop);

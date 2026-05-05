@@ -32,6 +32,7 @@ http://localhost:5175
 - Score, lives, combo counter
 - Wide-paddle and extra-life powerups
 - Particles and simple arcade polish
+- Restrained neon accent pass for UI chrome, skimmer lights, Pulse Core, Driftstone seams, and powerups
 - Animated three-pose pixel blob character in a dedicated Flurb Bay
 - Mood-based Flurb palette and flux wisps in splash, bay, and pilot views
 - Outer-space background with parallax star motion, nebula drift, route beacons, and distant exploration landmarks

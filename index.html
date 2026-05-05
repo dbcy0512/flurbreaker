@@ -17,6 +17,10 @@
       --green: #83c27d;
       --blue: #86acd9;
       --rose: #d67f7a;
+      --neon-cyan: #63e6ff;
+      --neon-pink: #ff5cc8;
+      --neon-gold: #ffd166;
+      --neon-green: #9cffb6;
     }
 
     * {
@@ -30,8 +34,8 @@
       place-items: center;
       background:
         linear-gradient(135deg, rgba(223, 184, 91, 0.14), transparent 34%),
-        linear-gradient(225deg, rgba(134, 172, 217, 0.13), transparent 38%),
-        linear-gradient(0deg, rgba(131, 194, 125, 0.08), transparent 30%),
+        linear-gradient(225deg, rgba(99, 230, 255, 0.13), transparent 38%),
+        linear-gradient(0deg, rgba(255, 92, 200, 0.07), transparent 30%),
         var(--bg);
       color: var(--text);
       font-family: "Segoe UI", system-ui, sans-serif;
@@ -51,7 +55,7 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       background: rgba(27, 34, 43, 0.94);
-      box-shadow: 0 22px 70px rgba(0, 0, 0, 0.28);
+      box-shadow: 0 22px 70px rgba(0, 0, 0, 0.28), 0 0 28px rgba(99, 230, 255, 0.05);
     }
 
     main {
@@ -82,8 +86,9 @@
     .score {
       min-width: 150px;
       text-align: right;
-      color: var(--gold);
+      color: var(--neon-gold);
       font-weight: 700;
+      text-shadow: 0 0 14px rgba(255, 209, 102, 0.24);
     }
 
     canvas {
@@ -93,6 +98,7 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #111820;
+      box-shadow: inset 0 0 26px rgba(99, 230, 255, 0.05);
     }
 
     aside {
@@ -122,6 +128,7 @@
       border-radius: 8px;
       background: var(--panel-2);
       padding: 10px;
+      box-shadow: inset 0 0 14px rgba(99, 230, 255, 0.035);
     }
 
     .stat strong {
@@ -155,7 +162,8 @@
     }
 
     button:hover {
-      border-color: var(--gold);
+      border-color: var(--neon-gold);
+      box-shadow: 0 0 18px rgba(255, 209, 102, 0.13);
     }
 
     .message {
@@ -234,6 +242,13 @@
     const restartButton = document.getElementById("restartButton");
 
     const colors = ["#dfb85b", "#83c27d", "#86acd9", "#d67f7a", "#b58ce0"];
+    const neon = {
+      cyan: "#63e6ff",
+      pink: "#ff5cc8",
+      gold: "#ffd166",
+      green: "#9cffb6",
+      violet: "#b66cff"
+    };
     const keys = new Set();
 
     const zones = [
@@ -936,12 +951,22 @@
       ctx.fill();
     }
 
+    function neonStroke(color, blur, alpha = 1) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = blur;
+      ctx.strokeStyle = color;
+      ctx.stroke();
+      ctx.restore();
+    }
+
     function drawBrick(brick) {
       if (brick.material === "driftstone") {
         const damage = 1 - brick.hp / brick.maxHp;
         const base = brick.hp > 1 ? "#8e8d86" : "#6f767c";
         const edge = brick.hp > 1 ? "#b0a793" : "#8fa0a7";
-        const seam = brick.hp > 1 ? "#63e6ff" : "#4fb5ca";
+        const seam = brick.hp > 1 ? neon.cyan : neon.pink;
         ctx.fillStyle = base;
         roundRect(brick.x, brick.y, brick.w, brick.h, 6);
         ctx.fillStyle = "rgba(255,255,255,0.15)";
@@ -953,11 +978,14 @@
         ctx.strokeStyle = seam;
         ctx.globalAlpha = 0.55;
         ctx.lineWidth = 2;
+        ctx.shadowColor = seam;
+        ctx.shadowBlur = 5 + damage * 6;
         ctx.beginPath();
         ctx.moveTo(brick.x + 8 + offset, brick.y + 7);
         ctx.lineTo(brick.x + 22 + offset * 0.35, brick.y + brick.h - 8);
         ctx.lineTo(brick.x + brick.w - 11, brick.y + 11 + (offset % 6));
         ctx.stroke();
+        ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
 
         ctx.fillStyle = "rgba(5,8,22,0.22)";
@@ -1142,10 +1170,13 @@
         const alpha = Math.max(0, trail.life / (trail.impact ? 0.24 : 0.28));
         ctx.globalAlpha = alpha * (trail.impact ? 0.55 : 0.32);
         ctx.strokeStyle = trail.color;
+        ctx.shadowColor = trail.color;
+        ctx.shadowBlur = trail.impact ? 10 : 7;
         ctx.lineWidth = trail.impact ? 3 : 2;
         ctx.beginPath();
         ctx.arc(trail.x, trail.y, trail.impact ? trail.r * (1.4 - alpha) : trail.r * (1.2 + (1 - alpha)), 0, Math.PI * 2);
         ctx.stroke();
+        ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
       }
     }
@@ -1154,17 +1185,21 @@
       const pulse = 1 + Math.sin(time / 110) * 0.13;
       const glow = ctx.createRadialGradient(state.ball.x, state.ball.y, 2, state.ball.x, state.ball.y, 30);
       glow.addColorStop(0, "rgba(245, 239, 230, 0.96)");
-      glow.addColorStop(0.35, "rgba(99, 230, 255, 0.86)");
+      glow.addColorStop(0.28, "rgba(255, 92, 200, 0.28)");
+      glow.addColorStop(0.5, "rgba(99, 230, 255, 0.86)");
       glow.addColorStop(1, "rgba(99, 230, 255, 0)");
       ctx.fillStyle = glow;
       ctx.beginPath();
       ctx.arc(state.ball.x, state.ball.y, 30 * pulse, 0, Math.PI * 2);
       ctx.fill();
 
+      ctx.shadowColor = neon.gold;
+      ctx.shadowBlur = 10;
       ctx.fillStyle = "#f5dc7a";
       ctx.beginPath();
       ctx.arc(state.ball.x, state.ball.y, state.ball.r * pulse, 0, Math.PI * 2);
       ctx.fill();
+      ctx.shadowBlur = 0;
       ctx.fillStyle = "#ffffff";
       ctx.beginPath();
       ctx.arc(state.ball.x - 3, state.ball.y - 3, 3, 0, Math.PI * 2);
@@ -1267,13 +1302,28 @@
       ctx.ellipse(x + w / 2, y + h + 7, w * 0.48, 8, 0, 0, Math.PI * 2);
       ctx.fill();
 
+      ctx.save();
+      ctx.strokeStyle = "rgba(99, 230, 255, 0.38)";
+      ctx.shadowColor = neon.cyan;
+      ctx.shadowBlur = 10;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x + 18, y + 8);
+      ctx.lineTo(x + w / 2, y - 1);
+      ctx.lineTo(x + w - 18, y + 8);
+      ctx.stroke();
+      ctx.restore();
+
       ctx.fillStyle = "#d8dce4";
       roundRect(x + 10, y + 8, w - 20, 14, 4);
       ctx.fillStyle = "#5f6b78";
       roundRect(x + 28, y + 2, w - 56, 18, 4);
-      ctx.fillStyle = "#63e6ff";
+      ctx.shadowColor = neon.cyan;
+      ctx.shadowBlur = 9;
+      ctx.fillStyle = neon.cyan;
       ctx.fillRect(x + w / 2 - 12, y + 7, 24, 5);
-      ctx.fillStyle = "#dfb85b";
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = neon.gold;
       ctx.fillRect(x + 14, y + 14, 12, 5);
       ctx.fillRect(x + w - 26, y + 14, 12, 5);
 
@@ -1283,15 +1333,18 @@
 
       if (thrust !== 0) {
         const flameX = thrust < 0 ? x + w - 8 : x + 8;
-        ctx.fillStyle = "#63e6ff";
+        ctx.shadowColor = neon.cyan;
+        ctx.shadowBlur = 13;
+        ctx.fillStyle = neon.cyan;
         ctx.beginPath();
         ctx.moveTo(flameX, y + 19);
         ctx.lineTo(flameX + (thrust < 0 ? 1 : -1) * (18 + flicker), y + 14);
         ctx.lineTo(flameX + (thrust < 0 ? 1 : -1) * (18 + flicker), y + 25);
         ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = "#d85cff";
+        ctx.fillStyle = neon.pink;
         ctx.fillRect(flameX + (thrust < 0 ? 1 : -1) * 9, y + 18, 8, 4);
+        ctx.shadowBlur = 0;
       }
 
       drawPilotFlurb(time, x, y, w);
@@ -1319,6 +1372,9 @@
       ctx.strokeStyle = "rgba(99,230,255,0.42)";
       ctx.lineWidth = 2;
       ctx.strokeRect(72, 58, 656, 350);
+      ctx.beginPath();
+      ctx.roundRect(82, 68, 636, 330, 8);
+      neonStroke(neon.pink, 16, 0.16);
 
       const dockX = 208;
       const dockY = 284;
@@ -1330,9 +1386,12 @@
       ctx.fillRect(dockX + 32, dockY + 10, 320, 44);
       ctx.fillStyle = "#d8dce4";
       ctx.fillRect(dockX + 72, dockY, 240, 36);
-      ctx.fillStyle = "#63e6ff";
+      ctx.shadowColor = neon.cyan;
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = neon.cyan;
       ctx.fillRect(dockX + 164, dockY + 11, 62, 8);
-      ctx.fillStyle = "#dfb85b";
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = neon.gold;
       ctx.fillRect(dockX + 58, dockY + 45, 34, 10);
       ctx.fillRect(dockX + 292, dockY + 45, 34, 10);
 
@@ -1392,8 +1451,12 @@
       drawDroppedBossPieces();
 
       for (const powerup of state.powerups) {
-        ctx.fillStyle = powerup.type === "wide" ? "#86acd9" : "#83c27d";
+        const powerupColor = powerup.type === "wide" ? neon.cyan : neon.green;
+        ctx.shadowColor = powerupColor;
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = powerupColor;
         roundRect(powerup.x, powerup.y, powerup.w, powerup.h, 4);
+        ctx.shadowBlur = 0;
         ctx.fillStyle = "#101317";
         ctx.font = "bold 12px Segoe UI";
         ctx.textAlign = "center";

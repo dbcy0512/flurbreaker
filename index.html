@@ -969,7 +969,7 @@
       drawPilotFlurb(time, x, y, w);
     }
 
-    function drawFlurbBay(time) {
+    function drawFlurbBay(time, variant = "between") {
       const w = canvas.width;
       const h = canvas.height;
       const bayGradient = ctx.createLinearGradient(0, 0, 0, h);
@@ -1027,16 +1027,20 @@
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.font = "bold 42px Segoe UI";
-      ctx.fillText("FLURB BAY", canvas.width / 2, 105);
+      ctx.fillText(variant === "pause" ? "PAUSED IN FLURB BAY" : "FLURB BAY", canvas.width / 2, 105);
       ctx.fillStyle = "#63e6ff";
       ctx.font = "bold 17px Segoe UI";
-      ctx.fillText(`NEXT: ${stages[state.stageIndex + 1]?.name || "unknown route"}`, canvas.width / 2, 424);
+      ctx.fillText(
+        variant === "pause" ? `${currentStage().role.toUpperCase()} ${state.stageIndex + 1}: ${currentStage().name}` : `NEXT: ${stages[state.stageIndex + 1]?.name || "unknown route"}`,
+        canvas.width / 2,
+        424
+      );
       ctx.fillStyle = "#b7afa3";
       ctx.font = "15px Segoe UI";
       ctx.fillText(`H2O ${state.resources.water}   FE ${state.resources.iron}   PT ${state.resources.platinum}`, canvas.width / 2, 452);
       ctx.fillStyle = "#dfb85b";
       ctx.font = "bold 16px Segoe UI";
-      ctx.fillText("PRESS SPACE TO CONTINUE", canvas.width / 2, 478);
+      ctx.fillText(variant === "pause" ? "PRESS P TO RESUME" : "PRESS SPACE TO CONTINUE", canvas.width / 2, 478);
     }
 
     function draw(time) {
@@ -1080,7 +1084,7 @@
       drawPulseCore(time);
 
       if (!state.launched && !state.gameOver && !state.won) drawOverlay("Ready", "Press Space to launch");
-      if (state.paused) drawOverlay("Paused", "Press P to resume");
+      if (state.paused) drawFlurbBay(time, "pause");
       if (state.gameOver) drawOverlay("Game Over", "Press R to restart");
       if (state.won) drawOverlay("Cleared", "Every board is clean");
     }

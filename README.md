@@ -38,6 +38,7 @@ http://localhost:5175
 - Pulse Core replaces the plain ball, with trail and impact feedback
 - Flurb is visible as the skimmer pilot during gameplay
 - Flurb Bay appears as a before/between-stage interstitial for resources and future ship evolution
+- Pause screen also uses Flurb Bay so resources and ship state remain visible
 - Real start screen introducing Flurb as a Fluxmorph before gameplay begins
 
 ## Story Foundation
@@ -46,7 +47,7 @@ Flurb is traveling through space. Water, iron, and platinum are critical to surv
 
 Flurb is a member of a species known as Fluxmorphs. The start screen only hints at identification for now, leaving room for the character and lore to evolve later.
 
-Flurb stays visible during play as the pilot. Flurb Bay appears between stages for resources, ship presentation, and later post-stage upgrade/evolution choices.
+Flurb stays visible during play as the pilot. Flurb Bay appears between stages and during pause for resources, ship presentation, and later post-stage upgrade/evolution choices.
 
 ## Stage Materials
 

@@ -528,7 +528,7 @@
       }
       audio.ctx = audio.ctx || new AudioContext();
       audio.master = audio.master || audio.ctx.createGain();
-      audio.master.gain.value = 0.48;
+      audio.master.gain.value = 0.96;
       if (!audio.connected) {
         audio.master.connect(audio.ctx.destination);
         audio.connected = true;

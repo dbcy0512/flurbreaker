@@ -356,6 +356,7 @@
 
     const state = {
       stageIndex: 0,
+      mode: "splash",
       score: 0,
       lives: 3,
       combo: 1,
@@ -480,19 +481,27 @@
     }
 
     function launch() {
+      if (state.mode === "splash") {
+        state.mode = "ready";
+        setMessage("Signal locked. Press Space again to launch the Pulse Core.");
+        updateUi();
+        return;
+      }
       if (state.gameOver || state.won) return;
       if (state.paused) {
         state.paused = false;
         setMessage("Back in motion.");
       }
       if (!state.launched) {
+        state.mode = "playing";
         state.launched = true;
         setMessage("Clear the board.");
       }
     }
 
-    function restartGame() {
+    function restartGame(showSplash = true) {
       state.stageIndex = 0;
+      state.mode = showSplash ? "splash" : "ready";
       state.score = 0;
       state.lives = 3;
       state.combo = 1;
@@ -504,7 +513,8 @@
       state.won = false;
       state.paused = false;
       makeStage(0);
-      setMessage("Fresh board. Press Space to launch.");
+      setMessage(showSplash ? "Signal drifting. Press Space to identify Flurb." : "Fresh board. Press Space to launch.");
+      updateUi();
     }
 
     function nextStage() {
@@ -517,6 +527,7 @@
         return;
       }
       makeStage(state.stageIndex);
+      state.mode = "ready";
       setMessage(`Stage ${state.stageIndex + 1}: ${currentStage().name}.`);
     }
 
@@ -587,8 +598,8 @@
     }
 
     function update(dt) {
-      if (state.paused || state.gameOver || state.won) return;
       state.starTime += dt;
+      if (state.mode === "splash" || state.paused || state.gameOver || state.won) return;
 
       const movingLeft = keys.has("arrowleft") || keys.has("a");
       const movingRight = keys.has("arrowright") || keys.has("d");
@@ -673,10 +684,12 @@
         }
       }
 
-      state.asteroidTimer -= dt;
-      if (state.asteroidTimer <= 0) {
-        spawnAsteroid();
-        state.asteroidTimer = currentStage().asteroidEvery * (0.82 + Math.random() * 0.36);
+      if (state.mode === "playing") {
+        state.asteroidTimer -= dt;
+        if (state.asteroidTimer <= 0) {
+          spawnAsteroid();
+          state.asteroidTimer = currentStage().asteroidEvery * (0.82 + Math.random() * 0.36);
+        }
       }
 
       for (let i = state.asteroids.length - 1; i >= 0; i -= 1) {
@@ -952,6 +965,10 @@
 
     function draw(time) {
       drawBackground();
+      if (state.mode === "splash") {
+        drawSplashScreen(time);
+        return;
+      }
 
       for (const brick of state.bricks) {
         ctx.fillStyle = brick.hp > 1 ? "#f3d088" : brick.color;
@@ -991,6 +1008,51 @@
       if (state.won) drawOverlay("Cleared", "Every board is clean");
     }
 
+    function drawSplashScreen(time) {
+      ctx.fillStyle = "rgba(5, 8, 22, 0.42)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "rgba(99, 230, 255, 0.1)";
+      roundRect(78, 68, 644, 332, 8);
+      ctx.strokeStyle = "rgba(99, 230, 255, 0.45)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(78, 68, 644, 332);
+
+      const { pose, blend } = getFlurbPose(time);
+      const scale = 12;
+      const x = 352;
+      const y = 132 + Math.sin(time / 220) * 5;
+      ctx.fillStyle = "rgba(0,0,0,0.34)";
+      ctx.beginPath();
+      ctx.ellipse(x + 54, y + 96, 72, 15, 0, 0, Math.PI * 2);
+      ctx.fill();
+      drawPixelPose(ctx, pose, x, y, scale, {
+        "1": "#151a22",
+        "2": "#f6efe6",
+        "3": blend < 0.5 ? "#d85cff" : "#63e6ff"
+      });
+
+      ctx.fillStyle = "#f5efe6";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "bold 54px Segoe UI";
+      ctx.fillText("FLURBREAKER", canvas.width / 2, 110);
+
+      ctx.font = "bold 19px Segoe UI";
+      ctx.fillStyle = "#63e6ff";
+      ctx.fillText("SPECIES SIGNAL: FLUXMORPH", canvas.width / 2, 288);
+
+      ctx.font = "15px Segoe UI";
+      ctx.fillStyle = "#b7afa3";
+      ctx.fillText("designation uncertain / responds to Flurb", canvas.width / 2, 318);
+      ctx.fillText("water, iron, platinum required for continued travel", canvas.width / 2, 344);
+
+      const pulse = 0.5 + Math.sin(time / 260) * 0.5;
+      ctx.fillStyle = `rgba(223, 184, 91, ${0.55 + pulse * 0.35})`;
+      ctx.font = "bold 18px Segoe UI";
+      ctx.fillText("PRESS SPACE TO BEGIN IDENTIFICATION", canvas.width / 2, 382);
+    }
+
     function drawOverlay(title, subtitle) {
       ctx.fillStyle = "rgba(16, 19, 23, 0.64)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1013,8 +1075,8 @@
       waterCount.textContent = state.resources.water;
       ironCount.textContent = state.resources.iron;
       platinumCount.textContent = state.resources.platinum;
-      startButton.textContent = state.paused ? "Resume" : state.launched ? "Pulse In Flight" : "Launch Pulse";
-      startButton.disabled = state.launched && !state.paused;
+      startButton.textContent = state.mode === "splash" ? "Begin Signal" : state.paused ? "Resume" : state.launched ? "Pulse In Flight" : "Launch Pulse";
+      startButton.disabled = state.mode !== "splash" && state.launched && !state.paused;
     }
 
     let last = performance.now();

@@ -33,6 +33,7 @@ http://localhost:5175
 - Wide-paddle and extra-life powerups
 - Particles and simple arcade polish
 - Animated three-pose pixel blob character in a dedicated Flurb Bay
+- Mood-based Flurb palette and flux wisps in splash, bay, and pilot views
 - Outer-space background with parallax star motion
 - Skimmer replaces the plain paddle
 - Pulse Core replaces the plain ball, with trail and impact feedback

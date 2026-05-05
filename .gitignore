@@ -1,0 +1,11 @@
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local editor/system files
+.vscode/
+*.log
+
+# Future JS tooling
+node_modules/
+dist/

@@ -219,6 +219,7 @@
           <span>Restart: R</span>
         </div>
         <button id="startButton" type="button">Launch Pulse</button>
+        <button id="soundButton" type="button">Test Sound</button>
         <button id="restartButton" type="button">Restart Game</button>
       </section>
 
@@ -239,6 +240,7 @@
     const comboLabel = document.getElementById("comboLabel");
     const message = document.getElementById("message");
     const startButton = document.getElementById("startButton");
+    const soundButton = document.getElementById("soundButton");
     const restartButton = document.getElementById("restartButton");
 
     const colors = ["#dfb85b", "#83c27d", "#86acd9", "#d67f7a", "#b58ce0"];
@@ -253,7 +255,8 @@
       ctx: null,
       master: null,
       unlocked: false,
-      muted: false
+      muted: false,
+      connected: false
     };
     const keys = new Set();
 
@@ -520,18 +523,34 @@
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) {
         audio.muted = true;
+        setMessage("Audio unavailable in this browser.");
         return;
       }
       audio.ctx = audio.ctx || new AudioContext();
       audio.master = audio.master || audio.ctx.createGain();
-      audio.master.gain.value = 0.22;
-      audio.master.connect(audio.ctx.destination);
-      if (audio.ctx.state === "suspended") audio.ctx.resume();
+      audio.master.gain.value = 0.48;
+      if (!audio.connected) {
+        audio.master.connect(audio.ctx.destination);
+        audio.connected = true;
+      }
       audio.unlocked = true;
+      if (audio.ctx.state === "suspended") {
+        audio.ctx.resume().catch(() => {
+          audio.muted = true;
+          setMessage("Audio was blocked by the browser.");
+        });
+      }
     }
 
     function playTone(frequency, duration = 0.12, options = {}) {
       if (!audio.unlocked || audio.muted || !audio.ctx) return;
+      if (audio.ctx.state === "suspended") {
+        audio.ctx.resume().then(() => playTone(frequency, duration, options)).catch(() => {
+          audio.muted = true;
+          setMessage("Audio was blocked by the browser.");
+        });
+        return;
+      }
       const now = audio.ctx.currentTime;
       const osc = audio.ctx.createOscillator();
       const gain = audio.ctx.createGain();
@@ -559,6 +578,13 @@
 
     function playNoise(duration = 0.12, options = {}) {
       if (!audio.unlocked || audio.muted || !audio.ctx) return;
+      if (audio.ctx.state === "suspended") {
+        audio.ctx.resume().then(() => playNoise(duration, options)).catch(() => {
+          audio.muted = true;
+          setMessage("Audio was blocked by the browser.");
+        });
+        return;
+      }
       const now = audio.ctx.currentTime;
       const bufferSize = Math.max(1, Math.floor(audio.ctx.sampleRate * duration));
       const buffer = audio.ctx.createBuffer(1, bufferSize, audio.ctx.sampleRate);
@@ -584,6 +610,10 @@
       if (name === "start") {
         playTone(330, 0.09, { type: "triangle", volume: 0.16, filter: 1800 });
         setTimeout(() => playTone(495, 0.16, { type: "triangle", volume: 0.13, filter: 2200 }), 70);
+      } else if (name === "test") {
+        playTone(440, 0.12, { type: "triangle", volume: 0.26, filter: 2600 });
+        setTimeout(() => playTone(660, 0.12, { type: "sine", volume: 0.24, filter: 3200 }), 90);
+        setTimeout(() => playTone(880, 0.2, { type: "sine", volume: 0.22, filter: 3600 }), 180);
       } else if (name === "launch") {
         playTone(180, 0.16, { type: "sawtooth", endFrequency: 520, volume: 0.14, filter: 1800 });
         playTone(720, 0.08, { type: "sine", volume: 0.08, filter: 2600 });
@@ -622,6 +652,12 @@
       } else if (name === "pause") {
         playTone(320, 0.06, { type: "sine", volume: 0.07, filter: 1800 });
       }
+    }
+
+    function testSound() {
+      unlockAudio();
+      playSound("test");
+      setMessage(audio.muted ? "Audio unavailable in this browser." : "Sound test sent. If silent, check browser/tab/system volume.");
     }
 
     function launch() {
@@ -1720,6 +1756,7 @@
       unlockAudio();
       launch();
     });
+    soundButton.addEventListener("click", testSound);
     restartButton.addEventListener("click", () => {
       unlockAudio();
       restartGame();

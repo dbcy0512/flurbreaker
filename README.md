@@ -27,7 +27,7 @@ http://localhost:5175
 
 - Zone 1: Space Navigation
 - Levels 1-1 through 1-4 are data-defined brick breaker levels
-- Level 1-5 is reserved for a future boss encounter
+- Level 1-5 is the first boss encounter: Driftmass Signal
 - Level 1-1 is the tutorial: Driftstone Field
 - Score, lives, combo counter
 - Wide-paddle and extra-life powerups
@@ -58,7 +58,7 @@ Flurb stays visible during play as the pilot. Flurb Bay appears between stages a
 - 1-2 Broken Orbit: ring-like gaps for rebound and angle reading.
 - 1-3 Dense Belt: thick asteroid belt with tougher driftstone/resource pressure.
 - 1-4 Approach Vector: chevron route that points toward the future boss signal.
-- 1-5 Driftmass Signal: boss placeholder, not implemented yet.
+- 1-5 Driftmass Signal: 4 outer driftstone shards at 4 HP each, then an 8 HP exposed core.
 
 Levels 1-4 in each zone are intended to use map layouts as part of the aesthetic language. In Space Navigation, maps should feel like asteroid routes, broken orbits, dense belts, and approach vectors rather than generic brick walls.
 
@@ -77,3 +77,10 @@ Levels 1-4 in each zone are intended to use map layouts as part of the aesthetic
 - Brick breaks can emit material-specific debris, such as driftstone chips and mineral sparks.
 - Resource pickups emit colored motes matching the collected resource.
 - Pulse Core hits emit short impact rings and directional sparks.
+
+## Boss Foundation
+
+- Boss pieces are separate hit targets rather than normal bricks.
+- Driftmass outer pieces drop away incrementally when destroyed.
+- The boss core is locked until all outer pieces are destroyed.
+- Driftmass core clear currently grants a small iron/platinum bonus and clears Zone 1.

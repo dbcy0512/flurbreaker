@@ -368,13 +368,19 @@
               "..112211..",
               ".11111111."
             ]
+          },
+          {
+            name: "Driftmass Signal",
+            role: "Boss",
+            type: "boss",
+            material: "driftstone",
+            ballSpeed: 348,
+            paddleWidth: 104,
+            asteroidEvery: 1.22,
+            asteroidSpeed: 240,
+            lesson: "Crack the outer driftstone pieces, then expose the core."
           }
-        ],
-        bossPlaceholder: {
-          level: 5,
-          name: "Driftmass Signal",
-          status: "reserved"
-        }
+        ]
       }
     ];
 
@@ -404,6 +410,8 @@
       pulseTrail: [],
       powerups: [],
       asteroids: [],
+      droppedBossPieces: [],
+      boss: null,
       resources: { water: 0, iron: 0, platinum: 0 },
       asteroidTimer: 0,
       starTime: 0
@@ -474,6 +482,8 @@
 
     function makeStage(stageIndex) {
       state.bricks = [];
+      state.boss = null;
+      state.droppedBossPieces = [];
       state.powerups = [];
       state.particles = [];
       state.pulseTrail = [];
@@ -486,6 +496,13 @@
       const brickH = 24;
       state.paddle.w = level.paddleWidth;
       state.paddle.x = canvas.width / 2 - state.paddle.w / 2;
+
+      if (level.type === "boss") {
+        makeDriftmassBoss();
+        resetBall();
+        updateUi();
+        return;
+      }
 
       for (let row = 0; row < level.layout.length; row += 1) {
         const line = level.layout[row].padEnd(cols, ".");
@@ -509,6 +526,23 @@
       }
       resetBall();
       updateUi();
+    }
+
+    function makeDriftmassBoss() {
+      state.boss = {
+        x: canvas.width / 2,
+        y: 150,
+        vx: 34,
+        phase: 0,
+        coreOpen: false,
+        pieces: [
+          { id: "top", label: "North Shard", dx: 0, dy: -58, r: 30, hp: 4, maxHp: 4, active: true },
+          { id: "left", label: "West Shard", dx: -92, dy: 6, r: 33, hp: 4, maxHp: 4, active: true },
+          { id: "right", label: "East Shard", dx: 92, dy: 6, r: 33, hp: 4, maxHp: 4, active: true },
+          { id: "bottom", label: "South Shard", dx: 0, dy: 66, r: 35, hp: 4, maxHp: 4, active: true },
+          { id: "core", label: "Signal Core", dx: 0, dy: 8, r: 38, hp: 8, maxHp: 8, active: false, core: true }
+        ]
+      };
     }
 
     function setMessage(text) {
@@ -614,6 +648,11 @@
       spawnParticles(brick.x + brick.w / 2, brick.y + brick.h / 2, brick.color, 18, { shape: "spark", minSpeed: 120, maxSpeed: 260, life: 0.36, lifeJitter: 0.24, size: 3, sizeJitter: 2, gravity: 80 });
     }
 
+    function spawnBossPieceBreakEffect(piece) {
+      spawnParticles(piece.x, piece.y, "#8fa0a7", 28, { shape: "chip", minSpeed: 110, maxSpeed: 280, life: 0.58, lifeJitter: 0.38, size: 5, sizeJitter: 5, gravity: 210, spin: 10 });
+      spawnParticles(piece.x, piece.y, piece.core ? "#dfb85b" : "#63e6ff", piece.core ? 18 : 10, { shape: "spark", minSpeed: 100, maxSpeed: 250, life: 0.42, lifeJitter: 0.25, size: 2, sizeJitter: 3, gravity: 45 });
+    }
+
     function spawnResourcePickupEffect(x, y, resource) {
       spawnParticles(x, y, resource.color, 18, { shape: "mote", minSpeed: 35, maxSpeed: 150, life: 0.62, lifeJitter: 0.35, size: 2, sizeJitter: 2, gravity: -35 });
       state.pulseTrail.push({ x, y, life: 0.34, r: 22, impact: true, color: resource.color });
@@ -663,6 +702,81 @@
       return dx * dx + dy * dy <= circle.r * circle.r;
     }
 
+    function circleCircleCollision(a, b) {
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      const radius = a.r + b.r;
+      return dx * dx + dy * dy <= radius * radius;
+    }
+
+    function hitBossPiece(piece) {
+      if (piece.hitCooldown > 0) return;
+      piece.hitCooldown = 0.18;
+      piece.hp -= 1;
+      state.ball.vy *= -1;
+      state.score += piece.core ? 35 * state.combo : 20 * state.combo;
+      state.combo = Math.min(9, state.combo + 1);
+      spawnImpactBurst(state.ball.x, state.ball.y, piece.core ? "#dfb85b" : "#63e6ff", 12);
+
+      if (piece.hp > 0) return;
+
+      piece.active = false;
+      spawnBossPieceBreakEffect(piece);
+      if (!piece.core) {
+        state.droppedBossPieces.push({
+          x: piece.x,
+          y: piece.y,
+          r: piece.r,
+          vx: (piece.dx >= 0 ? 1 : -1) * (55 + Math.random() * 60),
+          vy: 70 + Math.random() * 45,
+          spin: Math.random() * Math.PI * 2,
+          spinSpeed: (Math.random() > 0.5 ? 1 : -1) * (1.6 + Math.random() * 1.8),
+          life: 2.4
+        });
+        if (state.boss.pieces.filter((part) => !part.core).every((part) => !part.active)) {
+          const core = state.boss.pieces.find((part) => part.core);
+          core.active = true;
+          state.boss.coreOpen = true;
+          setMessage("Driftmass core exposed. Crack the signal.");
+        }
+        return;
+      }
+
+      state.won = true;
+      state.launched = false;
+      state.asteroids = [];
+      state.powerups = [];
+      state.resources.iron += 2;
+      state.resources.platinum += 1;
+      setMessage("Driftmass cracked. Zone 1 route clear.");
+      updateUi();
+    }
+
+    function updateBoss(dt) {
+      if (!state.boss) return;
+      state.boss.phase += dt;
+      state.boss.x += state.boss.vx * dt;
+      if (state.boss.x < 275 || state.boss.x > 525) state.boss.vx *= -1;
+
+      for (const piece of state.boss.pieces) {
+        piece.hitCooldown = Math.max(0, (piece.hitCooldown || 0) - dt);
+        piece.x = state.boss.x + piece.dx + Math.sin(state.boss.phase * 1.4 + piece.dy) * 4;
+        piece.y = state.boss.y + piece.dy + Math.cos(state.boss.phase * 1.1 + piece.dx) * 4;
+      }
+    }
+
+    function updateDroppedBossPieces(dt) {
+      for (let i = state.droppedBossPieces.length - 1; i >= 0; i -= 1) {
+        const piece = state.droppedBossPieces[i];
+        piece.x += piece.vx * dt;
+        piece.y += piece.vy * dt;
+        piece.vy += 70 * dt;
+        piece.spin += piece.spinSpeed * dt;
+        piece.life -= dt;
+        if (piece.life <= 0 || piece.y - piece.r > canvas.height + 60) state.droppedBossPieces.splice(i, 1);
+      }
+    }
+
     function collectAsteroid(asteroid) {
       state.resources[asteroid.type] += 1;
       state.score += 15;
@@ -691,7 +805,9 @@
 
     function update(dt) {
       state.starTime += dt;
+      updateDroppedBossPieces(dt);
       if (state.mode === "splash" || state.mode === "bay" || state.paused || state.gameOver || state.won) return;
+      updateBoss(dt);
 
       const movingLeft = keys.has("arrowleft") || keys.has("a");
       const movingRight = keys.has("arrowright") || keys.has("d");
@@ -747,6 +863,15 @@
             maybePowerup(brick.x + brick.w / 2, brick.y + brick.h / 2);
           }
           break;
+        }
+
+        if (state.boss) {
+          for (const piece of state.boss.pieces) {
+            if (!piece.active) continue;
+            if (!circleCircleCollision(state.ball, piece)) continue;
+            hitBossPiece(piece);
+            break;
+          }
         }
 
         if (state.ball.y > canvas.height + 30) handlePulseMiss();
@@ -815,7 +940,7 @@
         if (trail.life <= 0) state.pulseTrail.splice(i, 1);
       }
 
-      if (state.bricks.length === 0 && !state.gameOver) nextStage();
+      if (currentLevel().type === "breaker" && state.bricks.length === 0 && !state.gameOver) nextStage();
       updateUi();
     }
 
@@ -894,6 +1019,72 @@
       roundRect(brick.x, brick.y, brick.w, brick.h, 5);
       ctx.fillStyle = "rgba(255,255,255,0.16)";
       ctx.fillRect(brick.x + 6, brick.y + 5, brick.w - 12, 3);
+    }
+
+    function drawDriftmassPiece(piece, dropped = false) {
+      const hpRatio = Math.max(0, piece.hp ?? 1) / Math.max(1, piece.maxHp ?? 1);
+      ctx.save();
+      ctx.translate(piece.x, piece.y);
+      ctx.rotate(piece.spin || 0);
+      const gradient = ctx.createRadialGradient(-piece.r * 0.25, -piece.r * 0.35, 2, 0, 0, piece.r * 1.2);
+      gradient.addColorStop(0, piece.core ? "#d7c48e" : "#9da3a6");
+      gradient.addColorStop(0.6, piece.core ? "#796d55" : "#657177");
+      gradient.addColorStop(1, "#303941");
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      for (let i = 0; i < 12; i += 1) {
+        const angle = (Math.PI * 2 * i) / 12;
+        const wobble = piece.r * (0.72 + seededNoise(i + piece.r + piece.x * 0.01) * 0.35);
+        ctx.lineTo(Math.cos(angle) * wobble, Math.sin(angle) * wobble);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = piece.core ? "#dfb85b" : "#63e6ff";
+      ctx.globalAlpha = piece.active === false && !dropped ? 0.15 : 0.55;
+      ctx.lineWidth = piece.core ? 4 : 3;
+      ctx.beginPath();
+      ctx.moveTo(-piece.r * 0.48, -piece.r * 0.1);
+      ctx.lineTo(-piece.r * 0.05, piece.r * 0.34);
+      ctx.lineTo(piece.r * 0.46, -piece.r * 0.22);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      if (!dropped && piece.active) {
+        ctx.fillStyle = "rgba(5,8,22,0.72)";
+        ctx.fillRect(-piece.r * 0.58, piece.r + 8, piece.r * 1.16, 5);
+        ctx.fillStyle = piece.core ? "#dfb85b" : "#63e6ff";
+        ctx.fillRect(-piece.r * 0.58, piece.r + 8, piece.r * 1.16 * hpRatio, 5);
+      }
+      ctx.restore();
+    }
+
+    function drawBoss() {
+      if (!state.boss) return;
+      ctx.strokeStyle = "rgba(99,230,255,0.18)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(state.boss.x, state.boss.y + 10, 158, 118, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      for (const piece of state.boss.pieces) {
+        if (!piece.active) continue;
+        if (piece.core && !state.boss.coreOpen) continue;
+        drawDriftmassPiece(piece);
+      }
+
+      if (!state.boss.coreOpen) {
+        ctx.fillStyle = "rgba(183,175,163,0.8)";
+        ctx.font = "bold 13px Segoe UI";
+        ctx.textAlign = "center";
+        ctx.fillText("OUTER SHARDS LOCK CORE", state.boss.x, state.boss.y + 128);
+      }
+    }
+
+    function drawDroppedBossPieces() {
+      for (const piece of state.droppedBossPieces) {
+        drawDriftmassPiece(piece, true);
+      }
     }
 
     function drawAsteroid(asteroid) {
@@ -1157,6 +1348,9 @@
         drawBrick(brick);
       }
 
+      drawBoss();
+      drawDroppedBossPieces();
+
       for (const powerup of state.powerups) {
         ctx.fillStyle = powerup.type === "wide" ? "#86acd9" : "#83c27d";
         roundRect(powerup.x, powerup.y, powerup.w, powerup.h, 4);
@@ -1182,7 +1376,7 @@
       if (!state.launched && !state.gameOver && !state.won) drawOverlay("Ready", "Press Space to launch");
       if (state.paused) drawFlurbBay(time, "pause");
       if (state.gameOver) drawOverlay("Game Over", "Press R to restart");
-      if (state.won) drawOverlay("Cleared", "Every board is clean");
+      if (state.won) drawOverlay("Zone Clear", "Driftmass signal cracked");
     }
 
     function drawSplashScreen(time) {

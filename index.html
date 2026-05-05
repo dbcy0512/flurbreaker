@@ -164,6 +164,52 @@
       line-height: 1.45;
     }
 
+    .flurb-bay {
+      display: grid;
+      gap: 10px;
+    }
+
+    .flurb-canvas {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      display: block;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #070b16;
+    }
+
+    .resource-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+    }
+
+    .resource-pill {
+      display: grid;
+      grid-template-columns: 12px 1fr auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 30px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-2);
+      padding: 6px 9px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .resource-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      background: var(--gold);
+    }
+
+    .resource-count {
+      color: var(--text);
+      font-weight: 700;
+    }
+
     @media (max-width: 920px) {
       body {
         display: block;
@@ -192,6 +238,16 @@
     </main>
 
     <aside>
+      <section class="flurb-bay">
+        <h2>Flurb Bay</h2>
+        <canvas class="flurb-canvas" id="flurbBay" width="248" height="186" aria-label="Flurb showcase and starter ship"></canvas>
+        <div class="resource-grid">
+          <div class="resource-pill"><span class="resource-dot" style="background:#63e6ff"></span><span>Water</span><strong class="resource-count" id="waterCount">0</strong></div>
+          <div class="resource-pill"><span class="resource-dot" style="background:#c2cad4"></span><span>Iron</span><strong class="resource-count" id="ironCount">0</strong></div>
+          <div class="resource-pill"><span class="resource-dot" style="background:#e8dcff"></span><span>Platinum</span><strong class="resource-count" id="platinumCount">0</strong></div>
+        </div>
+      </section>
+
       <section>
         <h2>Status</h2>
         <div class="stat-grid">
@@ -224,11 +280,16 @@
   <script>
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
+    const flurbBay = document.getElementById("flurbBay");
+    const fctx = flurbBay.getContext("2d");
     const scoreLabel = document.getElementById("scoreLabel");
     const stageLabel = document.getElementById("stageLabel");
     const livesLabel = document.getElementById("livesLabel");
     const bricksLabel = document.getElementById("bricksLabel");
     const comboLabel = document.getElementById("comboLabel");
+    const waterCount = document.getElementById("waterCount");
+    const ironCount = document.getElementById("ironCount");
+    const platinumCount = document.getElementById("platinumCount");
     const message = document.getElementById("message");
     const startButton = document.getElementById("startButton");
     const restartButton = document.getElementById("restartButton");
@@ -312,8 +373,7 @@
       asteroids: [],
       resources: { water: 0, iron: 0, platinum: 0 },
       asteroidTimer: 0,
-      starTime: 0,
-      blob: { x: 706, y: 386, scale: 5 }
+      starTime: 0
     };
 
     const blobPoses = [
@@ -692,40 +752,6 @@
       ctx.fill();
     }
 
-    function drawPixelBlob(time) {
-      const frame = Math.floor(time / 260) % blobPoses.length;
-      const nextFrame = (frame + 1) % blobPoses.length;
-      const blend = (time % 260) / 260;
-      const bounce = Math.sin(time / 180) * 3;
-      const x = state.blob.x;
-      const y = state.blob.y + bounce;
-      const s = state.blob.scale;
-      const pose = blend < 0.5 ? blobPoses[frame] : blobPoses[nextFrame];
-
-      ctx.fillStyle = "rgba(0,0,0,0.28)";
-      ctx.beginPath();
-      ctx.ellipse(x + 22, y + 39, 30, 8, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      const palette = {
-        "1": "#151a22",
-        "2": "#f6efe6",
-        "3": blend < 0.5 ? "#d85cff" : "#63e6ff"
-      };
-
-      for (let row = 0; row < pose.length; row += 1) {
-        for (let col = 0; col < pose[row].length; col += 1) {
-          const value = pose[row][col];
-          if (value === "0") continue;
-          ctx.fillStyle = palette[value];
-          ctx.fillRect(x + col * s, y + row * s, s, s);
-        }
-      }
-
-      ctx.fillStyle = "rgba(255,255,255,0.35)";
-      ctx.fillRect(x + 5 * s, y + 1 * s, s, s);
-    }
-
     function drawAsteroid(asteroid) {
       const material = resources[asteroid.type];
       ctx.save();
@@ -822,28 +848,75 @@
       }
     }
 
-    function drawFlurbHud() {
-      const x = state.blob.x - 16;
-      const y = state.blob.y + 48;
-      ctx.fillStyle = "rgba(5, 8, 22, 0.78)";
-      roundRect(x, y, 92, 48, 7);
-      ctx.fillStyle = "#f5efe6";
-      ctx.font = "bold 10px Segoe UI";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "top";
-      ctx.fillText("FLURB", x + 9, y + 6);
-
-      let row = 0;
-      for (const type of resourceTypes) {
-        const resource = resources[type];
-        const ry = y + 20 + row * 8;
-        ctx.fillStyle = resource.color;
-        ctx.fillRect(x + 9, ry + 1, 6, 6);
-        ctx.fillStyle = "#d8dce4";
-        ctx.font = "9px Segoe UI";
-        ctx.fillText(`${resource.short}: ${state.resources[type]}`, x + 20, ry - 1);
-        row += 1;
+    function drawBayPixel(ctxTarget, pose, x, y, scale, palette) {
+      for (let row = 0; row < pose.length; row += 1) {
+        for (let col = 0; col < pose[row].length; col += 1) {
+          const value = pose[row][col];
+          if (value === "0") continue;
+          ctxTarget.fillStyle = palette[value];
+          ctxTarget.fillRect(x + col * scale, y + row * scale, scale, scale);
+        }
       }
+    }
+
+    function drawFlurbBay(time) {
+      const w = flurbBay.width;
+      const h = flurbBay.height;
+      const bayGradient = fctx.createLinearGradient(0, 0, 0, h);
+      bayGradient.addColorStop(0, "#070b16");
+      bayGradient.addColorStop(0.7, "#101733");
+      bayGradient.addColorStop(1, "#180f2b");
+      fctx.fillStyle = bayGradient;
+      fctx.fillRect(0, 0, w, h);
+
+      fctx.fillStyle = "rgba(245,239,230,0.5)";
+      for (let i = 0; i < 28; i += 1) {
+        const x = (seededNoise(i + 211) * w + state.starTime * (i % 3 + 1) * 5) % w;
+        const y = seededNoise(i + 317) * h;
+        fctx.fillRect(x, y, i % 4 === 0 ? 2 : 1, i % 5 === 0 ? 2 : 1);
+      }
+
+      const dockX = 22;
+      const dockY = 126;
+      fctx.fillStyle = "rgba(99,230,255,0.12)";
+      fctx.fillRect(0, dockY + 27, w, 1);
+      fctx.fillStyle = "#2b3340";
+      fctx.fillRect(dockX, dockY + 21, 190, 12);
+      fctx.fillStyle = "#5f6b78";
+      fctx.fillRect(dockX + 16, dockY + 5, 158, 22);
+      fctx.fillStyle = "#d8dce4";
+      fctx.fillRect(dockX + 36, dockY, 118, 18);
+      fctx.fillStyle = "#63e6ff";
+      fctx.fillRect(dockX + 82, dockY + 5, 30, 5);
+      fctx.fillStyle = "#dfb85b";
+      fctx.fillRect(dockX + 28, dockY + 22, 18, 5);
+      fctx.fillRect(dockX + 146, dockY + 22, 18, 5);
+
+      const frame = Math.floor(time / 260) % blobPoses.length;
+      const nextFrame = (frame + 1) % blobPoses.length;
+      const blend = (time % 260) / 260;
+      const pose = blend < 0.5 ? blobPoses[frame] : blobPoses[nextFrame];
+      const bounce = Math.sin(time / 180) * 4;
+      const scale = 8;
+      const x = 86;
+      const y = 38 + bounce;
+      fctx.fillStyle = "rgba(0,0,0,0.3)";
+      fctx.beginPath();
+      fctx.ellipse(x + 36, y + 67, 44, 10, 0, 0, Math.PI * 2);
+      fctx.fill();
+      drawBayPixel(fctx, pose, x, y, scale, {
+        "1": "#151a22",
+        "2": "#f6efe6",
+        "3": blend < 0.5 ? "#d85cff" : "#63e6ff"
+      });
+
+      fctx.fillStyle = "#f5efe6";
+      fctx.font = "bold 11px Segoe UI";
+      fctx.textAlign = "left";
+      fctx.fillText("FLURB", 14, 18);
+      fctx.fillStyle = "#b7afa3";
+      fctx.font = "10px Segoe UI";
+      fctx.fillText("starter ship: skimmer shell", 14, 32);
     }
 
     function draw(time) {
@@ -885,9 +958,6 @@
       if (state.paused) drawOverlay("Paused", "Press P to resume");
       if (state.gameOver) drawOverlay("Game Over", "Press R to restart");
       if (state.won) drawOverlay("Cleared", "Every board is clean");
-
-      drawPixelBlob(time);
-      drawFlurbHud();
     }
 
     function drawOverlay(title, subtitle) {
@@ -909,6 +979,9 @@
       livesLabel.textContent = state.lives;
       bricksLabel.textContent = state.bricks.length;
       comboLabel.textContent = `x${state.combo}`;
+      waterCount.textContent = state.resources.water;
+      ironCount.textContent = state.resources.iron;
+      platinumCount.textContent = state.resources.platinum;
       startButton.textContent = state.paused ? "Resume" : state.launched ? "Pulse In Flight" : "Launch Pulse";
       startButton.disabled = state.launched && !state.paused;
     }
@@ -919,6 +992,7 @@
       last = now;
       update(dt);
       draw(now);
+      drawFlurbBay(now);
       requestAnimationFrame(loop);
     }
 

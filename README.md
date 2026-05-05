@@ -42,13 +42,13 @@ http://localhost:5175
 - Flurb is visible as the skimmer pilot during gameplay
 - Flurb Bay appears as a before/between-stage interstitial for loop pacing and future ship evolution
 - Pause screen also uses Flurb Bay so ship state remains visible
-- Real start screen introducing Flurb as a Fluxmorph before gameplay begins
+- Narrative start screen introducing Flurby as a mysterious Fluxmorph before gameplay begins
 
 ## Story Foundation
 
 Flurb is traveling through the Space Navigation zone, learning to break routes through driftstone fields and survive the Driftmass Signal.
 
-Flurb is a member of a species known as Fluxmorphs. The start screen only hints at identification for now, leaving room for the character and lore to evolve later.
+Flurby is a member of a species known as Fluxmorphs. The start screen frames her as a tiny traveler waking in unknown space while distant signals seem to remember shapes she has not become yet.
 
 Flurb stays visible during play as the pilot. Flurb Bay appears between stages and during pause for ship presentation and later post-stage upgrade/evolution choices.
 

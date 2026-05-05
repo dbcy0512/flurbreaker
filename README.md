@@ -38,6 +38,7 @@ http://localhost:5175
 - Skimmer replaces the plain paddle
 - Pulse Core replaces the plain ball, with trail and impact feedback
 - Typed particle effects for driftstone breaks and pulse impacts
+- Driftmass boss has pulsing signal rings, shard connectors, damage cracks, and an exposed core phase
 - Flurb is visible as the skimmer pilot during gameplay
 - Flurb Bay appears as a before/between-stage interstitial for loop pacing and future ship evolution
 - Pause screen also uses Flurb Bay so ship state remains visible
@@ -57,7 +58,7 @@ Flurb stays visible during play as the pilot. Flurb Bay appears between stages a
 - 1-2 Broken Orbit: ring-like gaps for rebound and angle reading.
 - 1-3 Dense Belt: thick asteroid belt with tougher driftstone pressure.
 - 1-4 Approach Vector: chevron route that points toward the future boss signal.
-- 1-5 Driftmass Signal: 4 outer driftstone shards at 4 HP each, then an 8 HP exposed core.
+- 1-5 Driftmass Signal: 4 outer driftstone shards at 3 HP each, then an 8 HP exposed core.
 
 Levels 1-4 in each zone are intended to use map layouts as part of the aesthetic language. In Space Navigation, maps should feel like asteroid routes, broken orbits, dense belts, and approach vectors rather than generic brick walls.
 

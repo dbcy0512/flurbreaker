@@ -481,10 +481,10 @@
         phase: 0,
         coreOpen: false,
         pieces: [
-          { id: "top", label: "North Shard", dx: 0, dy: -58, r: 30, hp: 4, maxHp: 4, active: true },
-          { id: "left", label: "West Shard", dx: -92, dy: 6, r: 33, hp: 4, maxHp: 4, active: true },
-          { id: "right", label: "East Shard", dx: 92, dy: 6, r: 33, hp: 4, maxHp: 4, active: true },
-          { id: "bottom", label: "South Shard", dx: 0, dy: 66, r: 35, hp: 4, maxHp: 4, active: true },
+          { id: "top", label: "North Shard", dx: 0, dy: -58, r: 30, hp: 3, maxHp: 3, active: true },
+          { id: "left", label: "West Shard", dx: -92, dy: 6, r: 33, hp: 3, maxHp: 3, active: true },
+          { id: "right", label: "East Shard", dx: 92, dy: 6, r: 33, hp: 3, maxHp: 3, active: true },
+          { id: "bottom", label: "South Shard", dx: 0, dy: 66, r: 35, hp: 3, maxHp: 3, active: true },
           { id: "core", label: "Signal Core", dx: 0, dy: 8, r: 38, hp: 8, maxHp: 8, active: false, core: true }
         ]
       };
@@ -983,9 +983,22 @@
 
     function drawDriftmassPiece(piece, dropped = false) {
       const hpRatio = Math.max(0, piece.hp ?? 1) / Math.max(1, piece.maxHp ?? 1);
+      const damage = 1 - hpRatio;
+      const pulse = 0.5 + Math.sin(state.starTime * 6 + piece.dx * 0.02 + piece.dy * 0.04) * 0.5;
       ctx.save();
       ctx.translate(piece.x, piece.y);
       ctx.rotate(piece.spin || 0);
+
+      if (!dropped && piece.active) {
+        const aura = ctx.createRadialGradient(0, 0, piece.r * 0.2, 0, 0, piece.r * 1.75);
+        aura.addColorStop(0, piece.core ? `rgba(223, 184, 91, ${0.24 + pulse * 0.16})` : `rgba(99, 230, 255, ${0.16 + pulse * 0.12})`);
+        aura.addColorStop(1, "rgba(5, 8, 22, 0)");
+        ctx.fillStyle = aura;
+        ctx.beginPath();
+        ctx.arc(0, 0, piece.r * 1.75, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       const gradient = ctx.createRadialGradient(-piece.r * 0.25, -piece.r * 0.35, 2, 0, 0, piece.r * 1.2);
       gradient.addColorStop(0, piece.core ? "#d7c48e" : "#9da3a6");
       gradient.addColorStop(0.6, piece.core ? "#796d55" : "#657177");
@@ -1010,6 +1023,20 @@
       ctx.stroke();
       ctx.globalAlpha = 1;
 
+      if (damage > 0.05) {
+        ctx.strokeStyle = piece.core ? "#ffe3a1" : "#9cf3ff";
+        ctx.globalAlpha = Math.min(0.86, 0.28 + damage * 0.7);
+        ctx.lineWidth = 1.5 + damage * 1.2;
+        for (let i = 0; i < 3; i += 1) {
+          const angle = -0.8 + i * 0.7 + damage * 0.4;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(angle) * piece.r * 0.16, Math.sin(angle) * piece.r * 0.16);
+          ctx.lineTo(Math.cos(angle + 0.24) * piece.r * (0.52 + damage * 0.12), Math.sin(angle + 0.24) * piece.r * (0.52 + damage * 0.12));
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+
       if (!dropped && piece.active) {
         ctx.fillStyle = "rgba(5,8,22,0.72)";
         ctx.fillRect(-piece.r * 0.58, piece.r + 8, piece.r * 1.16, 5);
@@ -1021,11 +1048,35 @@
 
     function drawBoss() {
       if (!state.boss) return;
-      ctx.strokeStyle = "rgba(99,230,255,0.18)";
+      const phase = state.boss.phase;
+      const activeShards = state.boss.pieces.filter((piece) => !piece.core && piece.active);
+      const core = state.boss.pieces.find((piece) => piece.core);
+      const pulse = 0.5 + Math.sin(phase * 5) * 0.5;
+
+      ctx.save();
+      ctx.strokeStyle = `rgba(99,230,255,${0.1 + pulse * 0.12})`;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.ellipse(state.boss.x, state.boss.y + 10, 158, 118, 0, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.strokeStyle = "rgba(223,184,91,0.12)";
+      ctx.setLineDash([3, 12]);
+      ctx.beginPath();
+      ctx.ellipse(state.boss.x, state.boss.y + 10, 118 + pulse * 18, 84 + pulse * 12, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      if (core) {
+        for (const piece of activeShards) {
+          ctx.strokeStyle = `rgba(99,230,255,${0.18 + pulse * 0.18})`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(piece.x, piece.y);
+          ctx.lineTo(core.x || state.boss.x, core.y || state.boss.y + 8);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
 
       for (const piece of state.boss.pieces) {
         if (!piece.active) continue;
@@ -1034,6 +1085,14 @@
       }
 
       if (!state.boss.coreOpen) {
+        ctx.save();
+        ctx.strokeStyle = `rgba(223,184,91,${0.18 + pulse * 0.18})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(state.boss.x, state.boss.y + 8, 48 + pulse * 8, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
         ctx.fillStyle = "rgba(183,175,163,0.8)";
         ctx.font = "bold 13px Segoe UI";
         ctx.textAlign = "center";

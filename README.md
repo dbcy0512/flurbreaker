@@ -30,6 +30,7 @@ http://localhost:5175
 - Level 1-5 is the first boss encounter: Driftmass Signal
 - Level 1-1 is the tutorial: Driftstone Field
 - Score, lives, combo counter
+- Faster Pulse Core and Skimmer pacing with a stronger stage-by-stage speed ramp
 - Wide-paddle and extra-life powerups
 - Particles and simple arcade polish
 - Synthesized Web Audio sound effects for launch, impacts, breaks, pickups, stage clears, misses, and Driftmass moments

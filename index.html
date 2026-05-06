@@ -643,8 +643,8 @@
       if (state.boss && state.mode === "playing") return "boss";
       if (state.mode === "splash") return "splash";
       if (state.mode === "bay" || state.paused) return "bay";
-      if (state.launched) return "play";
-      return "ready";
+      if (state.launched) return `play-${Math.min(state.stageIndex, 3)}`;
+      return `ready-${Math.min(state.stageIndex, 3)}`;
     }
 
     function updateMusic() {
@@ -658,13 +658,19 @@
 
       const patterns = {
         splash: { interval: 0.58, notes: [330, 494, 392, 587, 440, 660, 494, 392], volume: 0.11, duration: 0.34, filter: 1700 },
-        ready: { interval: 0.64, notes: [262, 392, 330, 494], volume: 0.08, duration: 0.26, filter: 1500 },
         bay: { interval: 0.62, notes: [294, 440, 370, 554, 440, 370], volume: 0.1, duration: 0.32, filter: 1800 },
-        play: { interval: 0.28, notes: [330, 392, 494, 392, 587, 494, 392, 330], volume: 0.065, duration: 0.16, filter: 2100 },
+        "ready-0": { interval: 0.64, notes: [262, 392, 330, 494], volume: 0.08, duration: 0.26, filter: 1500 },
+        "ready-1": { interval: 0.6, notes: [294, 440, 370, 554], volume: 0.08, duration: 0.25, filter: 1650 },
+        "ready-2": { interval: 0.56, notes: [330, 494, 392, 587], volume: 0.08, duration: 0.24, filter: 1800 },
+        "ready-3": { interval: 0.52, notes: [370, 554, 440, 660], volume: 0.08, duration: 0.23, filter: 1950 },
+        "play-0": { interval: 0.28, notes: [330, 392, 494, 392, 587, 494, 392, 330], volume: 0.065, duration: 0.16, filter: 2100 },
+        "play-1": { interval: 0.27, notes: [294, 370, 440, 554, 440, 370, 554, 660], volume: 0.066, duration: 0.16, filter: 2050 },
+        "play-2": { interval: 0.25, notes: [330, 494, 587, 494, 392, 587, 660, 587], volume: 0.068, duration: 0.15, filter: 2200 },
+        "play-3": { interval: 0.23, notes: [370, 440, 554, 660, 554, 740, 660, 554], volume: 0.07, duration: 0.145, filter: 2350 },
         boss: { interval: 0.36, notes: [110, 220, 147, 294, 196, 392, 147, 220], volume: 0.085, duration: 0.22, filter: 1200, type: "sawtooth" },
         clear: { interval: 0.5, notes: [392, 494, 587, 784, 587, 494], volume: 0.09, duration: 0.3, filter: 2300 }
       };
-      const pattern = patterns[mode] || patterns.ready;
+      const pattern = patterns[mode] || patterns["ready-0"];
       const now = audio.ctx.currentTime;
       while (audio.nextMusicAt < now + 0.12) {
         const note = pattern.notes[audio.musicStep % pattern.notes.length];

@@ -281,6 +281,7 @@
             ballSpeed: 302,
             paddleWidth: 120,
             lesson: "Launch, steer, break, collect.",
+            story: "A tiny signal wakes. The stars answer before Flurby can.",
             layout: [
               "...1111...",
               "..111111..",
@@ -297,6 +298,7 @@
             ballSpeed: 330,
             paddleWidth: 116,
             lesson: "Read gaps and rebound angles.",
+            story: "The stones are not drifting. They are pointing.",
             layout: [
               "..112211..",
               ".11....11.",
@@ -314,6 +316,7 @@
             ballSpeed: 360,
             paddleWidth: 110,
             lesson: "Manage tougher stone and denser routes.",
+            story: "Flurby feels a shape inside her that has not happened yet.",
             layout: [
               "2222222222",
               "1222222221",
@@ -331,6 +334,7 @@
             ballSpeed: 388,
             paddleWidth: 104,
             lesson: "Prepare for the zone boss route.",
+            story: "Something ahead remembers the name Fluxmorph.",
             layout: [
               "3...22...3",
               ".3..22..3.",
@@ -347,7 +351,8 @@
             material: "driftstone",
             ballSpeed: 402,
             paddleWidth: 104,
-            lesson: "Crack the outer driftstone pieces, then expose the core."
+            lesson: "Crack the outer driftstone pieces, then expose the core.",
+            story: "Driftmass waits like an old echo wrapped in stone."
           }
         ]
       }
@@ -456,6 +461,12 @@
 
     function currentLevel() {
       return levels[state.stageIndex];
+    }
+
+    function stageSignalLine(stageIndex = state.stageIndex) {
+      const level = levels[stageIndex];
+      if (!level) return "No signal found.";
+      return level.story || level.lesson || `${currentZone.name} route signal stable.`;
     }
 
     function makeStage(stageIndex) {
@@ -783,7 +794,7 @@
         state.mode = "playing";
         state.launched = true;
         playSound("launch");
-        setMessage("Clear the board.");
+        setMessage(stageSignalLine());
       }
     }
 
@@ -798,7 +809,7 @@
       state.won = false;
       state.paused = false;
       makeStage(0);
-      setMessage(showSplash ? "Signal drifting. Press Space to identify Flurb." : "Fresh board. Press Space to launch.");
+      setMessage(showSplash ? "Signal drifting. Press Space to identify Flurby." : stageSignalLine(0));
       updateUi();
     }
 
@@ -806,7 +817,7 @@
       state.stageIndex = stageIndex;
       makeStage(stageIndex);
       state.mode = "ready";
-      setMessage(`${currentZone.name} ${state.stageIndex + 1}: ${currentLevel().name}.`);
+      setMessage(`${currentZone.name} ${state.stageIndex + 1}: ${currentLevel().name}. ${stageSignalLine()}`);
     }
 
     function nextStage() {
@@ -815,7 +826,7 @@
         state.won = true;
         state.launched = false;
         playSound("zone-clear");
-        setMessage(`${currentZone.name} route clear. Boss signal reserved for later.`);
+        setMessage("Echo recovered: the stars remember Flurby changing.");
         updateUi();
         return;
       }
@@ -824,7 +835,7 @@
       state.powerups = [];
       state.pulseTrail = [];
       playSound("stage-clear");
-      setMessage("Flurb Bay: route check complete. Press Space to continue.");
+      setMessage(`Flurb Bay: ${stageSignalLine(nextIndex)}`);
       updateUi();
     }
 
@@ -933,7 +944,7 @@
           core.active = true;
           state.boss.coreOpen = true;
           playSound("core-open");
-          setMessage("Driftmass core exposed. Crack the signal.");
+          setMessage("The core opens. It is not attacking. It is recognizing.");
         }
         return;
       }
@@ -942,7 +953,7 @@
       state.launched = false;
       state.powerups = [];
       playSound("zone-clear");
-      setMessage("Driftmass cracked. Zone 1 route clear.");
+      setMessage("Echo recovered: the stars remember Flurby changing.");
       updateUi();
     }
 
@@ -1692,7 +1703,8 @@
       );
       ctx.fillStyle = "#b7afa3";
       ctx.font = "15px Segoe UI";
-      ctx.fillText("Skimmer systems nominal / Pulse Core stable", canvas.width / 2, 452);
+      const baySignalLine = variant === "pause" ? stageSignalLine() : stageSignalLine(state.stageIndex + 1);
+      ctx.fillText(baySignalLine, canvas.width / 2, 452);
       ctx.fillStyle = "#dfb85b";
       ctx.font = "bold 16px Segoe UI";
       ctx.fillText(variant === "pause" ? "PRESS P TO RESUME" : "PRESS SPACE TO CONTINUE", canvas.width / 2, 478);

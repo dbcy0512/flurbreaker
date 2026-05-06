@@ -48,6 +48,7 @@ http://localhost:5175
 - Flurb Bay appears as a before/between-stage interstitial for loop pacing and future ship evolution
 - Pause screen also uses Flurb Bay so ship state remains visible
 - Narrative start screen introducing Flurby as a mysterious Fluxmorph before gameplay begins
+- Zone 1 narrative beats in stage messages, Flurb Bay previews, Driftmass core reveal, and echo recovery
 
 ## Story Foundation
 
@@ -56,6 +57,8 @@ Flurb is traveling through the Space Navigation zone, learning to break routes t
 Flurby is a member of a species known as Fluxmorphs. The start screen frames her as a tiny traveler waking in unknown space while distant signals seem to remember shapes she has not become yet.
 
 Flurb stays visible during play as the pilot. Flurb Bay appears between stages and during pause for ship presentation and later post-stage upgrade/evolution choices.
+
+Zone 1 hints that Driftmass is a Fluxmorph Echo rather than a simple enemy: space recognizes Flurby, the stones seem to point toward something, and the first recovered echo suggests the stars remember her changing.
 
 ## Zone 1 Levels
 

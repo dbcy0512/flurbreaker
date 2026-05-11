@@ -38,6 +38,7 @@ http://localhost:5175
 - Test Sound button to explicitly unlock and verify browser audio at the current raised SFX level
 - Restrained neon accent pass for UI chrome, skimmer lights, Pulse Core, Driftstone seams, and powerups
 - Animated three-pose pixel blob character in a dedicated Flurb Bay
+- PixelLab Flurby GIF sprite drives the main character art with procedural fallback
 - Mood-based Flurb palette and flux wisps in splash, bay, and pilot views
 - Outer-space background with parallax star motion, nebula drift, route beacons, and distant exploration landmarks
 - Skimmer replaces the plain paddle

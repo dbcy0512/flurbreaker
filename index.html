@@ -253,6 +253,8 @@
       green: "#9cffb6",
       violet: "#b66cff"
     };
+    const flurbSprite = new Image();
+    flurbSprite.src = "assets/flurby-newest-email.gif";
     const audio = {
       ctx: null,
       master: null,
@@ -1494,6 +1496,21 @@
       }
     }
 
+    function drawFlurbSprite(ctxTarget, x, y, size, options = {}) {
+      if (!flurbSprite.complete || flurbSprite.naturalWidth === 0) return false;
+      ctxTarget.save();
+      ctxTarget.imageSmoothingEnabled = false;
+      if (options.flip) {
+        ctxTarget.translate(x + size, y);
+        ctxTarget.scale(-1, 1);
+        ctxTarget.drawImage(flurbSprite, 0, 0, size, size);
+      } else {
+        ctxTarget.drawImage(flurbSprite, x, y, size, size);
+      }
+      ctxTarget.restore();
+      return true;
+    }
+
     function getFlurbMood() {
       if (state.won) return "bright";
       if (state.gameOver || state.mode === "gameover") return "dim";
@@ -1546,24 +1563,27 @@
       const scale = 4;
       const bob = Math.sin(time / 180) * 2;
       const lean = (state.paddle.thrust || 0) * 3;
-      const x = shipX + shipW / 2 - 18 + lean;
+      const x = shipX + shipW / 2 - 20 + lean;
       const y = shipY - 30 + bob;
+      const spriteSize = 40;
 
       drawFluxWisps(ctx, x, y, scale, time, palette, 0.7);
 
       ctx.fillStyle = "rgba(99, 230, 255, 0.22)";
       ctx.beginPath();
-      ctx.ellipse(x + 18, y + 27, 25, 8, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + spriteSize / 2, y + spriteSize - 2, 25, 8, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      drawPixelPose(ctx, pose, x, y, scale, {
-        "1": "#151a22",
-        "2": palette.eyes,
-        "3": palette.body
-      });
+      if (!drawFlurbSprite(ctx, x, y - 3, spriteSize, { flip: state.paddle.thrust < 0 })) {
+        drawPixelPose(ctx, pose, x, y, scale, {
+          "1": "#151a22",
+          "2": palette.eyes,
+          "3": palette.body
+        });
 
-      ctx.fillStyle = "rgba(255,255,255,0.38)";
-      ctx.fillRect(x + 5 * scale, y + 1 * scale, scale, scale);
+        ctx.fillStyle = "rgba(255,255,255,0.38)";
+        ctx.fillRect(x + 5 * scale, y + 1 * scale, scale, scale);
+      }
     }
 
     function drawSkimmer(time) {
@@ -1675,18 +1695,21 @@
       const { pose, palette, mood } = getFlurbPose(time);
       const bounce = Math.sin(time / 180) * 4;
       const scale = 13;
-      const x = 342;
+      const spriteSize = 128;
+      const x = canvas.width / 2 - spriteSize / 2;
       const y = 130 + bounce;
       drawFluxWisps(ctx, x, y, scale, time, palette, mood === "intense" ? 1.25 : 1);
       ctx.fillStyle = "rgba(0,0,0,0.3)";
       ctx.beginPath();
-      ctx.ellipse(x + 58, y + 110, 80, 15, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + spriteSize / 2, y + spriteSize - 4, 80, 15, 0, 0, Math.PI * 2);
       ctx.fill();
-      drawPixelPose(ctx, pose, x, y, scale, {
-        "1": "#151a22",
-        "2": palette.eyes,
-        "3": palette.body
-      });
+      if (!drawFlurbSprite(ctx, x, y - 8, spriteSize)) {
+        drawPixelPose(ctx, pose, x, y, scale, {
+          "1": "#151a22",
+          "2": palette.eyes,
+          "3": palette.body
+        });
+      }
 
       ctx.fillStyle = "#f5efe6";
       ctx.textAlign = "center";
@@ -1778,18 +1801,21 @@
 
       const { pose, palette } = getFlurbPose(time);
       const scale = 12;
-      const x = 352;
+      const spriteSize = 116;
+      const x = canvas.width / 2 - spriteSize / 2;
       const y = 138 + Math.sin(time / 220) * 5;
       drawFluxWisps(ctx, x, y, scale, time, palette, 1.15);
       ctx.fillStyle = "rgba(0,0,0,0.34)";
       ctx.beginPath();
-      ctx.ellipse(x + 54, y + 96, 72, 15, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + spriteSize / 2, y + spriteSize - 6, 72, 15, 0, 0, Math.PI * 2);
       ctx.fill();
-      drawPixelPose(ctx, pose, x, y, scale, {
-        "1": "#151a22",
-        "2": palette.eyes,
-        "3": palette.body
-      });
+      if (!drawFlurbSprite(ctx, x, y - 8, spriteSize)) {
+        drawPixelPose(ctx, pose, x, y, scale, {
+          "1": "#151a22",
+          "2": palette.eyes,
+          "3": palette.body
+        });
+      }
 
       ctx.fillStyle = "#f5efe6";
       ctx.textAlign = "center";

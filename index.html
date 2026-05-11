@@ -255,6 +255,11 @@
     };
     const flurbSprite = new Image();
     flurbSprite.src = "assets/flurby-newest-email.gif";
+    const driftstoneBrickSprites = Array.from({ length: 16 }, (_, index) => {
+      const image = new Image();
+      image.src = `assets/bricks/space-navigation/driftstone-${String(index + 1).padStart(2, "0")}.png`;
+      return image;
+    });
     const audio = {
       ctx: null,
       master: null,
@@ -471,6 +476,12 @@
       return level.story || level.lesson || `${currentZone.name} route signal stable.`;
     }
 
+    function chooseDriftstoneSpriteIndex(stageIndex, row, col, hp) {
+      const stageShift = [0, 4, 8, 12, 3][stageIndex] || 0;
+      const mapShape = (row * 5 + col * 3 + hp * 7) % driftstoneBrickSprites.length;
+      return (stageShift + mapShape) % driftstoneBrickSprites.length;
+    }
+
     function makeStage(stageIndex) {
       state.bricks = [];
       state.boss = null;
@@ -508,6 +519,7 @@
             maxHp: hp,
             color: colors[(hp + row + col) % colors.length],
             material: level.material,
+            spriteIndex: level.material === "driftstone" ? chooseDriftstoneSpriteIndex(stageIndex, row, col, hp) : 0,
             row,
             col
           });
@@ -1243,19 +1255,26 @@
     function drawBrick(brick) {
       if (brick.material === "driftstone") {
         const damage = 1 - brick.hp / brick.maxHp;
-        const base = brick.hp > 1 ? "#8e8d86" : "#6f767c";
-        const edge = brick.hp > 1 ? "#b0a793" : "#8fa0a7";
         const seam = brick.hp > 1 ? neon.cyan : neon.pink;
-        ctx.fillStyle = base;
-        roundRect(brick.x, brick.y, brick.w, brick.h, 6);
-        ctx.fillStyle = "rgba(255,255,255,0.15)";
-        ctx.fillRect(brick.x + 5, brick.y + 4, brick.w - 12, 3);
-        ctx.fillStyle = edge;
-        ctx.fillRect(brick.x + 5, brick.y + brick.h - 5, brick.w - 10, 3);
+        const sprite = driftstoneBrickSprites[brick.spriteIndex % driftstoneBrickSprites.length];
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        if (sprite?.complete && sprite.naturalWidth > 0) {
+          ctx.drawImage(sprite, brick.x, brick.y - 4, brick.w, brick.h + 8);
+        } else {
+          ctx.fillStyle = brick.hp > 1 ? "#8e8d86" : "#6f767c";
+          roundRect(brick.x, brick.y, brick.w, brick.h, 6);
+        }
+        ctx.restore();
+
+        if (damage > 0) {
+          ctx.fillStyle = `rgba(255, 92, 200, ${0.08 + damage * 0.1})`;
+          roundRect(brick.x + 1, brick.y + 1, brick.w - 2, brick.h - 2, 5);
+        }
 
         const offset = (brick.row * 9 + brick.col * 13) % 17;
         ctx.strokeStyle = seam;
-        ctx.globalAlpha = 0.55;
+        ctx.globalAlpha = 0.36 + damage * 0.28;
         ctx.lineWidth = 2;
         ctx.shadowColor = seam;
         ctx.shadowBlur = 5 + damage * 6;
@@ -1266,10 +1285,6 @@
         ctx.stroke();
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
-
-        ctx.fillStyle = "rgba(5,8,22,0.22)";
-        ctx.fillRect(brick.x + 10 + (offset % 9), brick.y + 10, 5, 4);
-        ctx.fillRect(brick.x + brick.w - 19, brick.y + 8 + (offset % 8), 6, 5);
 
         if (damage > 0) {
           ctx.strokeStyle = "rgba(5,8,22,0.55)";

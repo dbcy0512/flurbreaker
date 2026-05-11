@@ -5,7 +5,7 @@
   "export_prompt": "Space brick for Brick Breaker, give it a space rock and metal touch.",
   "sprite_size": {
     "width": 48,
-    "height": 8
+    "height": 48
   },
   "files": [
     "driftstone-01.png",

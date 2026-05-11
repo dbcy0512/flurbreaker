@@ -1563,9 +1563,9 @@
       const scale = 4;
       const bob = Math.sin(time / 180) * 2;
       const lean = (state.paddle.thrust || 0) * 3;
-      const x = shipX + shipW / 2 - 20 + lean;
-      const y = shipY - 30 + bob;
-      const spriteSize = 40;
+      const spriteSize = 88;
+      const x = shipX + shipW / 2 - spriteSize / 2 + lean;
+      const y = shipY - 82 + bob;
 
       drawFluxWisps(ctx, x, y, scale, time, palette, 0.7);
 
@@ -1695,13 +1695,13 @@
       const { pose, palette, mood } = getFlurbPose(time);
       const bounce = Math.sin(time / 180) * 4;
       const scale = 13;
-      const spriteSize = 128;
+      const spriteSize = 240;
       const x = canvas.width / 2 - spriteSize / 2;
-      const y = 130 + bounce;
+      const y = 128 + bounce;
       drawFluxWisps(ctx, x, y, scale, time, palette, mood === "intense" ? 1.25 : 1);
       ctx.fillStyle = "rgba(0,0,0,0.3)";
       ctx.beginPath();
-      ctx.ellipse(x + spriteSize / 2, y + spriteSize - 4, 80, 15, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + spriteSize / 2, y + spriteSize - 4, 112, 18, 0, 0, Math.PI * 2);
       ctx.fill();
       if (!drawFlurbSprite(ctx, x, y - 8, spriteSize)) {
         drawPixelPose(ctx, pose, x, y, scale, {
@@ -1801,13 +1801,13 @@
 
       const { pose, palette } = getFlurbPose(time);
       const scale = 12;
-      const spriteSize = 116;
+      const spriteSize = 220;
       const x = canvas.width / 2 - spriteSize / 2;
-      const y = 138 + Math.sin(time / 220) * 5;
+      const y = 94 + Math.sin(time / 220) * 5;
       drawFluxWisps(ctx, x, y, scale, time, palette, 1.15);
       ctx.fillStyle = "rgba(0,0,0,0.34)";
       ctx.beginPath();
-      ctx.ellipse(x + spriteSize / 2, y + spriteSize - 6, 72, 15, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + spriteSize / 2, y + spriteSize - 6, 104, 18, 0, 0, Math.PI * 2);
       ctx.fill();
       if (!drawFlurbSprite(ctx, x, y - 8, spriteSize)) {
         drawPixelPose(ctx, pose, x, y, scale, {
@@ -1821,21 +1821,21 @@
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.font = "bold 48px Segoe UI";
-      ctx.fillText("FLURBY", canvas.width / 2, 92);
+      ctx.fillText("FLURBY", canvas.width / 2, 76);
 
       ctx.font = "bold 18px Segoe UI";
       ctx.fillStyle = "#63e6ff";
-      ctx.fillText("SPECIES SIGNAL: FLUXMORPH", canvas.width / 2, 286);
+      ctx.fillText("SPECIES SIGNAL: FLUXMORPH", canvas.width / 2, 322);
 
       ctx.font = "15px Segoe UI";
       ctx.fillStyle = "#b7afa3";
-      ctx.fillText("a tiny traveler wakes in unknown space", canvas.width / 2, 314);
-      ctx.fillText("the stars remember shapes she has not become", canvas.width / 2, 338);
-      ctx.fillText("first echo: Driftmass Signal / origin uncertain", canvas.width / 2, 362);
+      ctx.fillText("a tiny traveler wakes in unknown space", canvas.width / 2, 348);
+      ctx.fillText("the stars remember shapes she has not become", canvas.width / 2, 372);
+      ctx.fillText("first echo: Driftmass Signal / origin uncertain", canvas.width / 2, 396);
 
       ctx.fillStyle = `rgba(223, 184, 91, ${0.55 + signalPulse * 0.35})`;
       ctx.font = "bold 18px Segoe UI";
-      ctx.fillText("PRESS SPACE TO FOLLOW THE FIRST ECHO", canvas.width / 2, 406);
+      ctx.fillText("PRESS SPACE TO FOLLOW THE FIRST ECHO", canvas.width / 2, 424);
     }
 
     function drawOverlay(title, subtitle) {

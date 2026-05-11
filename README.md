@@ -46,7 +46,7 @@ http://localhost:5175
 - Pulse Core replaces the plain ball, with trail and impact feedback
 - Typed particle effects for driftstone breaks and pulse impacts
 - Driftmass boss has pulsing signal rings, shard connectors, damage cracks, and an exposed core phase
-- Space Navigation Driftstone bricks render from the organized sprite set while keeping neon damage seams and particles
+- Space Navigation Driftstone bricks use a curated 3-sprite zone set while keeping neon damage seams and particles
 - Flurb is visible as the skimmer pilot during gameplay
 - Flurb Bay appears as a before/between-stage interstitial for loop pacing and future ship evolution
 - Pause screen also uses Flurb Bay so ship state remains visible

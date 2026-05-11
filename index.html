@@ -255,9 +255,14 @@
     };
     const flurbSprite = new Image();
     flurbSprite.src = "assets/flurby-newest-email.gif";
-    const driftstoneBrickSprites = Array.from({ length: 16 }, (_, index) => {
+    const driftstoneBrickSpriteFiles = [
+      "driftstone-05.png",
+      "driftstone-13.png",
+      "driftstone-15.png"
+    ];
+    const driftstoneBrickSprites = driftstoneBrickSpriteFiles.map((file) => {
       const image = new Image();
-      image.src = `assets/bricks/space-navigation/driftstone-${String(index + 1).padStart(2, "0")}.png`;
+      image.src = `assets/bricks/space-navigation/${file}`;
       return image;
     });
     const audio = {
@@ -477,7 +482,7 @@
     }
 
     function chooseDriftstoneSpriteIndex(stageIndex, row, col, hp) {
-      const stageShift = [0, 4, 8, 12, 3][stageIndex] || 0;
+      const stageShift = [0, 1, 2, 1, 2][stageIndex] || 0;
       const mapShape = (row * 5 + col * 3 + hp * 7) % driftstoneBrickSprites.length;
       return (stageShift + mapShape) % driftstoneBrickSprites.length;
     }
